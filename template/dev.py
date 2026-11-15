@@ -10,19 +10,27 @@
     python dev.py pre-push           # what the pre-push hook runs
 
 On Windows, run it with `py` (`py dev.py check`). The hooks in git_hooks/ call it.
+
+It comes from python-template, and `copier update` replaces it: a project adds to it in
+dev_project.py, its own file, if it has one. That can define `COMMANDS`, a dict of extra
+commands (a name to a function taking the command's arguments, a list of strings), and
+`after_install()`, which `install` runs last. It's held to the same rules as this file.
 Standard library only: it runs before .venv exists. It runs under any Python from 3.11 (the
 first with tomllib; ruff checks it as 3.11), whatever the package needs, so the hooks work
 whichever `python3` comes first: everything but making .venv with venv and pip runs .venv's
 tools, and uv picks its own Python.
 """
 
+import importlib
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
+from types import ModuleType
 
 ROOT = Path(__file__).resolve().parent
 VENV = ROOT / ".venv"
@@ -67,6 +75,13 @@ def too_old(running: tuple[int, int], required: tuple[int, int]) -> str | None:
         f"dev.py: .venv needs Python {want} or newer, and this is {have}."
         f" Run it with python{want} (on Windows, py -{want}), or install uv, which finds one."
     )
+
+
+def _project() -> ModuleType | None:
+    """dev_project.py, the project's own additions to this script, or None if it has none."""
+    if not (ROOT / "dev_project.py").exists():
+        return None
+    return importlib.import_module("dev_project")
 
 
 def _pyproject_text() -> str:
@@ -187,6 +202,9 @@ def install() -> None:
             print(f"linked {link} -> {tool(name)}")
     run("git", "config", "core.hooksPath", "git_hooks")
     print("set this repository's hooks to git_hooks/")
+    after_install = getattr(_project(), "after_install", None)
+    if after_install is not None:
+        after_install()
     if str(bin_dir) not in os.environ.get("PATH", "").split(os.pathsep):
         if WINDOWS:
             _add_to_user_path(bin_dir)
@@ -303,7 +321,10 @@ def main(argv: list[str]) -> None:
     elif command == "pre-push":
         pre_push()
     else:
-        sys.exit(__doc__)
+        commands: dict[str, Callable[[list[str]], None]] = getattr(_project(), "COMMANDS", {})
+        if command not in commands:
+            sys.exit((__doc__ or "") + "".join(f"    python dev.py {name}\n" for name in commands))
+        commands[command](rest)
 
 
 if __name__ == "__main__":

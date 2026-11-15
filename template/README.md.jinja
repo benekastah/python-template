@@ -69,4 +69,7 @@ with [Copier](https://copier.readthedocs.io/). To bring in the template's later 
 uvx copier update --defaults
 ```
 
-It merges them with your changes, marking conflicts as git does.
+It merges them with your changes, marking conflicts as git does. It never touches this
+README, AGENTS.md or `.github/workflows/check.yml`, which are this project's own. `dev.py` is
+the template's: add commands and install steps in `dev_project.py` instead (see `dev.py`'s
+docstring).

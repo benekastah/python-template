@@ -47,9 +47,11 @@ later changes:
 uvx copier update --defaults
 ```
 
-Copier merges them with the project's own changes, marking conflicts as git does. Two files
-are samples, the project's own from the start, and an update never touches them: `AGENTS.md`
-and `README.md`.
+Copier merges them with the project's own changes, marking conflicts as git does. Three files
+are starting points, the project's own from the start, and an update never touches them:
+`AGENTS.md`, `README.md` and `.github/workflows/check.yml`, since each project's CI grows its
+own way. `dev.py` stays the template's: a project adds commands and install steps in its own
+`dev_project.py` (see `dev.py`'s docstring).
 
 To bring an existing project under the template, run `copier copy` into its clone, keep
 what's the project's own in each conflict, and commit the result with the answers file.

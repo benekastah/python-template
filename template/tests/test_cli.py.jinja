@@ -1,0 +1,15 @@
+import pytest
+
+from {{ package_name }}.cli import main
+
+
+def test_runs_with_no_arguments() -> None:
+    assert main([]) == 0
+
+
+def test_help_names_the_command(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exit_info:
+        main(["--help"])
+
+    assert exit_info.value.code == 0
+    assert capsys.readouterr().out.startswith("usage: {{ project_name }}")

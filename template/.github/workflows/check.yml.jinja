@@ -1,0 +1,126 @@
+{% raw %}# Runs the static checks (formatting, lint, types) once and the tests on Linux, macOS and
+# Windows, with the oldest and newest Python supported: once per pull request (on the merge
+# GitHub would make), and on whatever lands on main.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its run still going, which no longer says anything about
+# it and holds runners the new one needs. Runs on main all finish, each in a group of its own (a
+# shared group would still cancel one left waiting): each says whether that merge left main
+# working.
+concurrency:
+  group: check-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+# Each job's time limit (timeout-minutes) is about 20% over how long it takes, so a hung job
+# fails soon. If a job runs into it, speed it up if you can, and only then raise the limit (see
+# AGENTS.md).
+jobs:
+  # Whether anything but docs changed. A pull request touching only Markdown skips the checks
+  # (CI passed still reports); main always runs them.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2  # the merge GitHub would make, and its first parent: the base
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -eu
+          if [ "$EVENT" != pull_request ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Its own line, so a failing diff fails the step rather than reading as no code.
+          files=$(git diff --name-only --no-renames HEAD^1 HEAD)
+          if printf '%s\n' "$files" | grep -vE '\.md$' | grep -q .; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Formatting, lint and types are the same on every system: once, on Linux.
+  static:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          # The oldest Python supported, which basedpyright checks for too.
+{% endraw %}          python-version: "{{ min_python }}"
+{% raw %}          enable-cache: true
+          cache-dependency-glob: uv.lock
+      # Through uv: the runner's own `python` may be older than the one uv provides, and
+      # dev.py stops under a Python older than the package needs. dev.py installs from
+      # uv.lock, and in CI fails if it's out of date.
+      - run: uv run --no-project python dev.py static
+
+  # The tests, on every system, with the oldest and newest Python.
+  tests:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+{% endraw %}        python: ["{{ min_python }}", "{{ newest_python }}"]
+{% raw %}    name: ${{ matrix.os }}, Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Defender scans every file the tests write and every process they start, and
+      # Spotlight indexes the files, on runners thrown away after the job.
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-MpPreference -DisableRealtimeMonitoring $true
+      - if: runner.os == 'macOS'
+        run: sudo mdutil -a -i off
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv run --no-project python dev.py tests
+
+  # The one check a ruleset on main should require, so changing the jobs doesn't change what's
+  # required. It runs even if a check failed (a skipped required check would count as
+  # passing), and fails unless every check passed, or docs alone changed.
+  passed:
+    name: CI passed
+    if: always()
+    needs: [changes, static, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Fail unless every check passed
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          STATIC: ${{ needs.static.result }}
+          TESTS: ${{ needs.tests.result }}
+        run: |
+          [ "$CHANGES" = success ] || exit 1
+          [ "$CODE" = false ] && exit 0
+          [ "$STATIC" = success ] && [ "$TESTS" = success ]
+{% endraw %}

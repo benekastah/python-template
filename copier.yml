@@ -1,0 +1,71 @@
+# Questions `copier copy` asks, and how it renders template/ with the answers.
+_subdirectory: template
+_templates_suffix: .jinja
+_min_copier_version: "9.19"
+
+project_name:
+  type: str
+  help: The project's name, as installed and as its command (e.g. git-stack)
+  validator: >-
+    {% if not (project_name | regex_search('^[a-z][a-z0-9-]*$')) %}
+    Lowercase letters, digits and dashes, starting with a letter
+    {% endif %}
+
+package_name:
+  type: str
+  help: The Python package's name, as imported
+  default: "{{ project_name | replace('-', '_') }}"
+  validator: >-
+    {% if not (package_name | regex_search('^[a-z][a-z0-9_]*$')) %}
+    Lowercase letters, digits and underscores, starting with a letter
+    {% endif %}
+
+description:
+  type: str
+  help: One line saying what it does
+
+author_name:
+  type: str
+  help: Your name, for pyproject.toml and the license
+
+author_email:
+  type: str
+  help: Your email address, for pyproject.toml
+
+github_user:
+  type: str
+  help: The GitHub user or organization it will live under
+  default: benekastah
+
+min_python:
+  type: str
+  help: The oldest Python it supports
+  default: "3.11"
+  validator: >-
+    {% if not (min_python | regex_search('^3\.[0-9]+$')) %}
+    A version like 3.11
+    {% endif %}
+
+newest_python:
+  type: str
+  help: The newest Python CI tests it on
+  default: "3.15"
+  validator: >-
+    {% if not (newest_python | regex_search('^3\.[0-9]+$')) %}
+    A version like 3.15
+    {% endif %}
+
+copyright_year:
+  type: str
+  help: The year for the license
+  default: "{{ '%Y' | strftime }}"
+
+_message_after_copy: |
+  Made {{ project_name }} in {{ _copier_conf.dst_path }}. Next:
+
+    cd {{ _copier_conf.dst_path }}
+    git init
+    python3 dev.py install   # .venv, uv.lock, `{{ project_name }}` on PATH, the git hooks
+    python3 dev.py check     # formatting, lint, types, then the tests
+
+  Then commit everything, uv.lock and .copier-answers.yml included.

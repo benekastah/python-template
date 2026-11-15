@@ -1,0 +1,72 @@
+# {{ project_name }}
+
+{{ description }}
+
+## Installing
+
+```sh
+uv tool install git+https://github.com/{{ github_user }}/{{ project_name }}
+```
+
+or with pipx: `pipx install git+https://github.com/{{ github_user }}/{{ project_name }}`. It
+needs Python {{ min_python }} or newer.
+
+## Using it
+
+```sh
+{{ project_name }} --help
+```
+
+Say here what it does, with an example of each command.
+
+## Development
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), clone the repository,
+then run `dev.py install`:
+
+```sh
+git clone https://github.com/{{ github_user }}/{{ project_name }}
+cd {{ project_name }}
+python3 dev.py install
+```
+
+It sets up `.venv` with the package (editable) and the dev tools, puts `{{ project_name }}`
+on your `PATH` (a link in `~/.local/bin`, or on Windows a `.cmd` there), and makes the clone
+use the git hooks in `git_hooks/`. On Windows, run `dev.py` with `py` (`py dev.py install`).
+
+`dev.py` runs the same way on Linux, macOS and Windows:
+
+```sh
+python3 dev.py check       # every check: static, then tests
+python3 dev.py static      # Ruff's formatter and linter, and basedpyright in strict mode
+python3 dev.py tests       # the tests, in parallel (arguments go to pytest, e.g. -k name)
+python3 dev.py coverage    # the tests under coverage.py, and the lines they don't run
+```
+
+If the formatting check fails, `.venv/bin/ruff format` formats the code;
+`.venv/bin/ruff check --fix` fixes what it can of the linter's findings. The pre-commit hook
+does both for the files you commit, and the pre-push hook runs every check before a push to
+`main`.
+
+Dependencies are locked in `uv.lock`. `dev.py` installs from it with uv, and updates it when
+`pyproject.toml`'s dependencies change; commit both. Without uv, `dev.py` installs with pip,
+which doesn't read the lock.
+
+### CI and dependencies
+
+CI (`.github/workflows/check.yml`) runs the static checks once, on Linux, and the tests on
+Linux, macOS and Windows, with the oldest and newest Python {{ project_name }} supports, for
+every pull request and every push to `main`. It installs from `uv.lock` and fails if it's out
+of date. Dependabot proposes new versions of the dependencies and the workflow's actions
+weekly, each a week after its release.
+
+### Updating from the template
+
+This project was made from [python-template](https://github.com/{{ github_user }}/python-template)
+with [Copier](https://copier.readthedocs.io/). To bring in the template's later changes:
+
+```sh
+uvx copier update --defaults
+```
+
+It merges them with your changes, marking conflicts as git does.

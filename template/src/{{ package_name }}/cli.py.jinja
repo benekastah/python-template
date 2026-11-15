@@ -1,0 +1,11 @@
+"""The `{{ project_name }}` command."""
+
+import argparse
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the command with `argv` (the process's arguments when None), returning its exit
+    status."""
+    parser = argparse.ArgumentParser(prog="{{ project_name }}", description="{{ description }}")
+    parser.parse_args(argv)
+    return 0

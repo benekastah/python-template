@@ -1,16 +1,15 @@
-# Working on {{ project_name }}
+# Working on this project
 
-Notes for agents (and people) changing this repo. The README is the user documentation; its
-Development section says how to set up a clone and run the checks. Keep this file up to date
-when the shape of the code or a rule here changes.
+Notes for agents (and people) changing this repo: the rules and workflows it shares with
+other projects made from [python-template](https://github.com/benekastah/python-template).
 
-## Shape of the code
+**Read [PROJECT_AGENTS.md](PROJECT_AGENTS.md) too**: this project's own notes (the shape of
+its code, its own rules and decisions). Where the two differ, PROJECT_AGENTS.md wins. The
+README is the user documentation, and its Development section says how to set up a clone and
+run the checks.
 
-- `src/{{ package_name }}/cli.py`: the `{{ project_name }}` command's entry point.
-- `tests/`: the tests, run with pytest (see [Tests and checks](#tests-and-checks)).
-- `dev.py`: setting up a clone and running the checks, on every system (see the README).
-
-Describe each module here as the code grows: what it's for, and what it mustn't do.
+This file comes from the template, and `copier update` replaces it: change it in
+python-template, not here. Put what's true of this project alone in PROJECT_AGENTS.md.
 
 ## Rules for changes
 
@@ -22,8 +21,8 @@ Describe each module here as the code grows: what it's for, and what it mustn't 
   `dev.py check` and CI on their own (a model, then what uses it; a refactor, then the
   feature on it).
 - **Keep the docs up to date as you code**, in the same commit as the change, not in a docs
-  pass afterwards: the README for behavior (commands, options, output, config), this file
-  for the shape of the code and its rules, and the docstrings and comments on the code you
+  pass afterwards: the README for behavior (commands, options, output, config),
+  PROJECT_AGENTS.md for the shape of the code and the project's own rules, and the docstrings and comments on the code you
   touch. Before committing, search the docs and docstrings for the names you renamed, moved
   or removed.
 - **Comments say what's so**, not what the code used to do or ideas that were turned down:
@@ -64,7 +63,7 @@ Describe each module here as the code grows: what it's for, and what it mustn't 
 
 ## Linux, macOS and Windows
 
-{{ project_name }} runs on all three, and CI runs the tests on each. Keep it that way, with
+The project runs on all three, and CI runs the tests on each. Keep it that way, with
 every change:
 
 - Use `pathlib.Path` for paths, not strings joined with `/`, and compare them as `Path`s.
@@ -87,9 +86,9 @@ Each line of work (a feature, a stack of PRs, an experiment) gets its own git wo
 several agents or people can work at once without switching branches under each other:
 
 ```sh
-git worktree add ../{{ project_name }}-<topic> -b <branch> origin/main
-cd ../{{ project_name }}-<topic> && python3 dev.py venv   # each worktree has its own .venv
-git worktree remove ../{{ project_name }}-<topic>         # when it's merged
+git worktree add ../<repo>-<topic> -b <branch> origin/main
+cd ../<repo>-<topic> && python3 dev.py venv   # each worktree has its own .venv
+git worktree remove ../<repo>-<topic>         # when it's merged
 ```
 
 - **Leave the main checkout on `main`.** An editable install, an editor or another session

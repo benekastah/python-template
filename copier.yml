@@ -2,6 +2,10 @@
 _subdirectory: template
 _templates_suffix: .jinja
 _min_copier_version: "9.19"
+# The project's own from the start: written once, then never touched by `copier update`.
+_skip_if_exists:
+  - PROJECT_AGENTS.md
+  - README.md
 
 project_name:
   type: str

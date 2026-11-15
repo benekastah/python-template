@@ -21,10 +21,12 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   runners, uv's cache, a docs-only skip, and one `CI passed` job for a ruleset to require.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
-- **AGENTS.md** (with `CLAUDE.md` pointing to it): rules for changes, tests and checks,
-  working on Linux, macOS and Windows, worktrees for working on several things at once,
-  stacked PRs with git stack, and a review loop from PR to merge with fresh agents.
-- A README, an MIT license, and a CLI with one test, to fill in.
+- **AGENTS.md**: rules for changes, tests and checks, working on Linux, macOS and Windows,
+  worktrees for working on several things at once, stacked PRs with git stack, and a review
+  loop from PR to merge with fresh agents. **PROJECT_AGENTS.md** holds the project's own
+  notes (the shape of its code, its own rules), and wins where the two differ. `CLAUDE.md`
+  loads both.
+- A README, an MIT license, and a CLI with two tests, to fill in.
 
 ## Making a project
 
@@ -46,7 +48,10 @@ later changes:
 uvx copier update --defaults
 ```
 
-Copier merges them with the project's own changes, marking conflicts as git does.
+Copier merges them with the project's own changes, marking conflicts as git does. Two files
+are the project's alone from the start, and an update never touches them: `PROJECT_AGENTS.md`
+and `README.md`. `AGENTS.md` is the template's: an update brings its new rules, so put what's
+true of one project in its PROJECT_AGENTS.md, and change the shared rules here.
 
 To bring an existing project under the template, run `copier copy` into its clone, keep
 what's the project's own in each conflict, and commit the result with the answers file.

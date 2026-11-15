@@ -1,0 +1,19 @@
+# Working on {{ project_name }}
+
+{{ project_name }}'s own notes for agents (and people) changing it: what's true of this
+project alone. [AGENTS.md](AGENTS.md) has the rules it shares with other projects made from
+python-template; where the two differ, this file wins. The README says what
+{{ project_name }} does and how to set up a clone. Keep this file short, and up to date when
+the shape of the code or a rule here changes.
+
+## Shape of the code
+
+- `src/{{ package_name }}/cli.py`: the `{{ project_name }}` command's entry point.
+- `tests/`: the tests, run with pytest.
+- `dev.py`: setting up a clone and running the checks, on every system.
+
+Describe each module here as the code grows: what it's for, and what it mustn't do.
+
+## Rules for this project
+
+Decisions to keep, and rules that add to or differ from AGENTS.md's, each with why.

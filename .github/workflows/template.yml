@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: template-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  group: template-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

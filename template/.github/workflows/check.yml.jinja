@@ -11,12 +11,12 @@ on:
 permissions:
   contents: read
 
-# A new push to a pull request cancels its run still going, which no longer says anything about
-# it and holds runners the new one needs. Runs on main all finish, each in a group of its own (a
-# shared group would still cancel one left waiting): each says whether that merge left main
-# working.
+# A new push cancels the branch's run still going, which no longer says anything about the
+# branch and holds runners the new one needs (an account runs only so many jobs at once). On
+# main too: merging a stack pushes several commits at once, and only the newest one's run
+# matters, since each pull request had to pass before it merged.
 concurrency:
-  group: check-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  group: check-${{ github.ref }}
   cancel-in-progress: true
 
 # Each job's time limit (timeout-minutes) is about 20% over how long it takes, so a hung job

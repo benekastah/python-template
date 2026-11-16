@@ -54,9 +54,9 @@ are starting points, the project's own from the start, and an update never touch
 own way. `dev.py` stays the template's: a project adds commands and install steps in its own
 `dev_project.py` (see `dev.py`'s docstring).
 
-The package and its tests are the project's own too: an update never changes the samples it
-started from, `src/<package_name>/` and `tests/test_cli.py`, nor writes one again once
-deleted.
+The samples a project rewrites are its own too: an update never changes
+`src/<package_name>/cli.py`, `src/<package_name>/__init__.py` or `tests/test_cli.py`, nor
+writes one again once deleted.
 
 Everything else an update merges. In `pyproject.toml`, add to the template's lists below
 their "The project's own go below" comment, by hand (`uv add` sorts its addition in): an
@@ -81,3 +81,7 @@ cd /tmp/sample-tool && git init && python3 dev.py check
 ```
 
 `--vcs-ref HEAD` renders the last commit; Copier ignores uncommitted changes.
+
+What `_exclude` in `copier.yml` lists, an update leaves alone: a change to those files reaches
+new projects only, so keep it to samples a project rewrites, and put what existing projects
+need elsewhere (or in a release note).

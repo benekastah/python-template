@@ -10,10 +10,7 @@ name: ci
 on:
   push:
     branches: [main]
-  # closed too, only to cancel the pull request's run when it merges or closes (below): its
-  # result no longer matters, and main's own run follows a merge straight away.
   pull_request:
-    types: [opened, synchronize, reopened, closed]
 
 permissions:
   contents: read
@@ -26,11 +23,8 @@ permissions:
 # (though, like any queued run, it replaces another one waiting in the group). Here, not in a
 # job: project.yml's jobs are part of this run, so they're cancelled with it.
 #
-# A pull request's group is its number, not github.ref: a merged pull request's closed event
-# has main's ref, so it would cancel main's run, and not the pull request's. Its run (which
-# runs no job) then cancels the pull request's. No run starts for a pull request with
-# conflicts, so closing one leaves its run going. Runs in a group aren't certain to start in
-# order, so closing and reopening quickly can cancel the reopened run: re-run it.
+# A pull request's group is its number, the group cancel.yml's run joins when the pull request
+# merges or closes, to cancel this run: keep the two names the same.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
@@ -42,8 +36,6 @@ jobs:
   # Whether anything but docs changed. A pull request touching only Markdown skips the checks
   # (CI passed still reports); main always runs them.
   changes:
-    # Nothing runs for a closed pull request, and so nothing needing this job.
-    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 1
     outputs:
@@ -155,7 +147,7 @@ jobs:
   # did every other check.
   passed:
     name: CI passed
-    if: always() && github.event.action != 'closed'
+    if: always()
     needs: [changes, static, tests, coverage, project]
     runs-on: ubuntu-latest
     timeout-minutes: 2  # time for the force-cancel step's minute, below
@@ -169,7 +161,7 @@ jobs:
       # stopped this job within a minute, fail.
       #
       # A fork's pull request has a read-only token, which can't force-cancel. There, this job
-      # passes if the pull request has merged (its closed run cancelled this one, and a merged
+      # passes if the pull request has merged (cancel.yml cancelled this run, and a merged
       # pull request can't be reopened), so it isn't left red, and fails at once otherwise:
       # merely closed, it could be reopened with this green check on its unchecked head. Not
       # head.repo.fork: that's also true of a branch in a repository that's itself a fork.

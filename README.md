@@ -74,6 +74,8 @@ jobs. The rest stays the template's, so an update keeps it current:
   add keys to it without breaking a project. A job there can't `needs` a job in `ci.yml`,
   and gets at most `contents: read`: one needing more (to publish, say) goes in a workflow of
   its own.
+- `.github/workflows/cancel.yml`, which cancels a pull request's `ci.yml` run when it merges
+  or closes.
 
 Copier merges the template's changes to these with the project's, so a Dependabot bump to an
 action in them can conflict with the template's: keep the newer version.

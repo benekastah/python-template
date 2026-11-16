@@ -18,11 +18,11 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   every check before a push to `main`.
 - **GitHub Actions**: the static checks once, the tests on Linux, macOS and Windows with the
   oldest and newest Python supported, a coverage report in the job's summary (a check once
-  `fail_under` is set), per-job time limits, a docs-only skip, cancelling superseded runs,
-  and one `CI passed` job for a ruleset to require. The jobs set up uv and Python with a
-  composite action, `.github/actions/setup`. `copier update` keeps all that current, while
-  the project's own jobs go in `.github/workflows/project.yml`, which `CI passed` waits for
-  too.
+  `fail_under` is set), per-job time limits, a docs-only skip, cancelling superseded runs
+  and a pull request's run once it merges or closes, and one `CI passed` job for a ruleset to
+  require. The jobs set up uv and Python with a composite action, `.github/actions/setup`.
+  `copier update` keeps all that current, while the project's own jobs go in
+  `.github/workflows/project.yml`, which `CI passed` waits for too.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
 - **Agent instructions** in two files, which `CLAUDE.md` imports. `AGENTS.md` is the template's,
@@ -74,6 +74,8 @@ jobs. The rest stays the template's, so an update keeps it current:
   add keys to it without breaking a project. A job there can't `needs` a job in `ci.yml`,
   and gets at most `contents: read`: one needing more (to publish, say) goes in a workflow of
   its own.
+- `.github/workflows/cancel.yml`, which cancels a pull request's `ci.yml` run when it merges
+  or closes.
 
 Copier merges the template's changes to these with the project's, so a Dependabot bump to an
 action in them can conflict with the template's: keep the newer version.
@@ -136,8 +138,8 @@ twice), but before committing the update:
 3. Make any changes the project made to the template's jobs (a raised time limit, say) in
    `ci.yml`.
 4. Replace `check.yml` in what the project's README and `PROJECT_AGENTS.md` say about CI.
-5. Commit, with `ci.yml`, `project.yml` and `.github/actions/`. A ruleset requiring
-   `CI passed` needs no change.
+5. Commit, with `ci.yml`, `cancel.yml`, `project.yml` and `.github/actions/`. A ruleset
+   requiring `CI passed` needs no change.
 
 ## Working on the template
 

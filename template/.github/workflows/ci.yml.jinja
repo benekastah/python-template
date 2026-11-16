@@ -22,8 +22,11 @@ permissions:
 # A re-run cancels no running run, so re-running an older commit's run waits for the newest's
 # (though, like any queued run, it replaces another one waiting in the group). Here, not in a
 # job: project.yml's jobs are part of this run, so they're cancelled with it.
+#
+# A pull request's group is its number, the group cancel.yml's run joins when the pull request
+# merges or closes, to cancel this run: keep the two names the same.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 # Each job's time limit (timeout-minutes) is about 20% over how long it takes, so a hung job
@@ -150,16 +153,34 @@ jobs:
     timeout-minutes: 2  # time for the force-cancel step's minute, below
     permissions:
       actions: write
+      pull-requests: read  # whether a fork's pull request merged into the default branch
     steps:
       # A cancelled run still runs this job, because of always(). Cancelling it too, which only
       # force-cancel can, marks it cancelled rather than failed, which blocks a merge just the
-      # same. (A fork's pull request can't, so there it fails.) The next step doesn't run in a
-      # cancelled run, so if the force-cancel hasn't stopped this job within a minute, fail.
+      # same. The next step doesn't run in a cancelled run, so if the force-cancel hasn't
+      # stopped this job within a minute, fail.
+      #
+      # A fork's pull request has a read-only token, which can't force-cancel. There, this job
+      # passes if the pull request merged into the default branch (cancel.yml cancelled this
+      # run, and a merged pull request can't be reopened), so it isn't left red, and fails at
+      # once otherwise: merely closed, or merged elsewhere, its head could reach main in another
+      # pull request with this green check on code no run finished checking. The one gap left:
+      # the same head opened against another protected branch. Not head.repo.fork: that's also
+      # true of a branch in a repository that's itself a fork.
       - name: Cancel this job if the run was cancelled
         if: cancelled()
         env:
           GH_TOKEN: ${{ github.token }}
+          FORK: >-
+            ${{ github.event_name == 'pull_request' &&
+            github.event.pull_request.head.repo.full_name != github.repository }}
+          PR: ${{ github.event.pull_request.number }}
         run: |
+          if [ "$FORK" = true ]; then
+            test "$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" \
+              --jq '.merged and .base.ref == .base.repo.default_branch')" = true
+            exit 0
+          fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/force-cancel"
           sleep 60
           exit 1

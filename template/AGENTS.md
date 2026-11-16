@@ -64,11 +64,13 @@ Development section says how to set up a clone and run the checks.
   finished runs, rounded up to a whole minute. If a job runs into its limit, speed it up if
   you can (the tests, or the code itself); only if you can't, raise the limit, saying why in
   the commit.
-- **CI is in two workflows.** `.github/workflows/ci.yml` is the template's (`copier update`
-  keeps it current): the static checks, the tests, coverage, and the `CI passed` job a
-  ruleset requires. The project's own jobs go in `.github/workflows/project.yml`, which
-  `ci.yml` runs and `CI passed` waits for; they can set up uv and Python with
-  `.github/actions/setup`, also the template's.
+- **CI is the template's `ci.yml` and `cancel.yml`, and the project's `project.yml`.**
+  `.github/workflows/ci.yml` is the template's (`copier update` keeps it current): the static
+  checks, the tests, coverage, and the `CI passed` job a ruleset requires. The project's own
+  jobs go in `.github/workflows/project.yml`, which `ci.yml` runs and `CI passed` waits for;
+  they can set up uv and Python with `.github/actions/setup`, also the template's.
+  `.github/workflows/cancel.yml`, the template's too, cancels a pull request's `ci.yml` run
+  when it merges or closes, so its concurrency group must stay the same as `ci.yml`'s.
 
 ## Linux, macOS and Windows
 

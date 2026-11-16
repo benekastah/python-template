@@ -10,8 +10,10 @@ on:
 permissions:
   contents: read
 
+# A pull request's group is its number, the group cancel.yml's run joins when the pull request
+# merges or closes, to cancel this run: keep the two names the same.
 concurrency:
-  group: template-${{ github.ref }}
+  group: template-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 jobs:

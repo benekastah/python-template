@@ -71,6 +71,27 @@ newest_python:
     A version like 3.15
     {% endif %}
 
+# How many CI jobs run each system's tests, with each Python (see dev.py's --shard): more than 1
+# for tests that take too long for one job's 5 minutes. Answers, not a file of the project's,
+# so ci.yml stays the template's; change one with `uvx copier update --defaults -d NAME=N`.
+test_shards_linux:
+  type: int
+  help: How many CI jobs to split the tests into on Linux (1 unless they take over 4 minutes)
+  default: 1
+  validator: "{% if not 1 <= test_shards_linux <= 8 %}From 1 to 8{% endif %}"
+
+test_shards_macos:
+  type: int
+  help: How many CI jobs to split the tests into on macOS (1 unless they take over 4 minutes)
+  default: 1
+  validator: "{% if not 1 <= test_shards_macos <= 8 %}From 1 to 8{% endif %}"
+
+test_shards_windows:
+  type: int
+  help: How many CI jobs to split the tests into on Windows (1 unless they take over 4 minutes)
+  default: 1
+  validator: "{% if not 1 <= test_shards_windows <= 8 %}From 1 to 8{% endif %}"
+
 copyright_year:
   type: str
   help: The year for the license

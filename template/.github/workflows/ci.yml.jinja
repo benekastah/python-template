@@ -29,9 +29,9 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
-# Each job's time limit (timeout-minutes) is about 20% over how long it takes, so a hung job
-# fails soon. If a job runs into it, speed it up if you can, and only then raise the limit (see
-# AGENTS.md).
+# Each job's time limit (timeout-minutes) is about 20% over how long it takes, and at most 5
+# minutes, so a hung job fails soon and no job keeps a run waiting long. If a job runs into it,
+# speed it up, or split it (see AGENTS.md); raise the limit only while it stays within 5.
 jobs:
   # Whether anything but docs changed. A pull request touching only Markdown skips the checks
   # (CI passed still reports); main always runs them.
@@ -81,17 +81,33 @@ jobs:
       # uv.lock, and in CI fails if it's out of date.
       - run: uv run --no-project python dev.py static
 
-  # The tests, on every system, with the oldest and newest Python.
+  # The tests, on every system, with the oldest and newest Python, each split into as many jobs
+  # (shards) as the project's Copier answers say for that system: test_shards_linux,
+  # test_shards_macos and test_shards_windows (see AGENTS.md).
   tests:
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    timeout-minutes: 10
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-{% endraw %}        python: ["{{ min_python }}", "{{ newest_python }}"]
-{% raw %}    name: ${{ matrix.os }}, Python ${{ matrix.python }}
+        include:
+{%- endraw %}
+{%- for os, shards in [
+  ("ubuntu-latest", test_shards_linux),
+  ("macos-latest", test_shards_macos),
+  ("windows-latest", test_shards_windows),
+] %}
+{%- for python in [min_python, newest_python] %}
+{%- for shard in range(1, shards + 1) %}
+          - {os: {{ os }}, python: "{{ python }}", shard: {{ shard }}, shards: {{ shards }}}
+{%- endfor %}
+{%- endfor %}
+{%- endfor %}
+{% raw %}    # "windows-latest, Python 3.11", and " (2/3)" after it for the second of three shards.
+    name: >-
+      ${{ matrix.os }}, Python ${{ matrix.python }}${{ matrix.shards > 1 &&
+      format(' ({0}/{1})', matrix.shard, matrix.shards) || '' }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -100,16 +116,19 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python }}
-      - run: uv run --no-project python dev.py tests
+      - run: uv run --no-project python dev.py tests --shard ${{ matrix.shard }}/${{ matrix.shards }}
 
   # What the tests run, once, on Linux with the newest Python: each file's lines and branches
   # they don't, in the job's summary. A report rather than a check until pyproject.toml's
-  # [tool.coverage.report] sets fail_under, below which this job, and so CI, fails.
+  # [tool.coverage.report] sets fail_under, below which this job, and so CI, fails. In parallel
+  # like the tests job, so it takes about as long. Were that ever over the limit, it could be
+  # sharded too: `coverage run -m pytest -p dev --shard I/N` in each job, each uploading its
+  # .coverage.* files, then one job to `coverage combine` them and report.
   coverage:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

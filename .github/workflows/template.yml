@@ -55,7 +55,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     name: ${{ matrix.os }}, Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 5  # at most, as in the projects' ci.yml
     strategy:
       fail-fast: false
       matrix:
@@ -92,6 +92,27 @@ jobs:
           git init -q
           uv lock
           uv run --no-project python dev.py check
+      # dev.py's --shard, as ci.yml runs it: the shards' tests, together, are the whole suite's,
+      # each once, here too (pytest-xdist imports dev.py in each worker). More tests than the
+      # sample's two, so each of the three shards gets several.
+      - name: Check that the shards split the tests
+        shell: bash
+        working-directory: ${{ runner.temp }}/sample-tool
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'import pytest' '' '' '@pytest.mark.parametrize("n", range(20))' \
+            'def test_n(n: int) -> None:' '    assert n >= 0' > tests/test_shards.py
+          passed() {
+            uv run --no-project python dev.py tests -q -rA "$@" | sed -n 's/^PASSED //p'
+          }
+          passed | sort > "$RUNNER_TEMP/all"
+          for i in 1 2 3; do passed --shard "$i/3"; done | sort > "$RUNNER_TEMP/shards"
+          test "$(grep -c . "$RUNNER_TEMP/all")" = 22
+          diff "$RUNNER_TEMP/all" "$RUNNER_TEMP/shards"
+          # A shard past the last is a usage error (4), not a run of no tests.
+          rc=0
+          uv run --no-project python dev.py tests --shard 4/3 > /dev/null 2>&1 || rc=$?
+          test "$rc" = 4
       # actionlint, with shellcheck for the scripts, catches a workflow GitHub would reject or
       # misread (a bad key or expression, an input that isn't declared), which the checks above
       # never run. Once: the workflows are the same on every system.
@@ -99,9 +120,18 @@ jobs:
         if: matrix.lint
         shell: bash
         # Read-only and offline: actionlint only reads, and a fork's pull request is linted too.
-        # Each repository is linted even if one fails, so a run shows every error.
+        # Each repository is linted even if one fails, so a run shows every error. A project
+        # that splits its tests (test_shards_*) too, for ci.yml's matrix of shards.
         run: |
-          git -C "$RUNNER_TEMP/sample-tool" init -q  # actionlint looks for the repository's root
+          uvx copier@9.19.1 copy --quiet --defaults --vcs-ref HEAD \
+            -d project_name=sharded-tool -d "description=A sample tool." \
+            -d "author_name=Sample Author" -d author_email=sample@example.com \
+            -d test_shards_linux=2 -d test_shards_windows=3 . "$RUNNER_TEMP/sharded-tool"
+          test "$(grep -c '^          - {os: windows-latest, .*, shards: 3}$' \
+            "$RUNNER_TEMP/sharded-tool/.github/workflows/ci.yml")" = 6
+          # actionlint looks for the repository's root.
+          git -C "$RUNNER_TEMP/sample-tool" init -q
+          git -C "$RUNNER_TEMP/sharded-tool" init -q
           image=$(docker build -q .github/actionlint)
           rc=0
           lint() {
@@ -111,13 +141,15 @@ jobs:
           }
           lint "$GITHUB_WORKSPACE"
           lint "$RUNNER_TEMP/sample-tool" -config-file /config/sample.yaml
+          lint "$RUNNER_TEMP/sharded-tool" -config-file /config/sample.yaml
           exit "$rc"
 
   # `copier update` in a project that has made the samples, PROJECT_AGENTS.md and docs/ its own,
   # added to pyproject.toml's lists and changed CI, to a later template commit that changes
-  # them, dev.py, AGENTS.md, docs/ and CI: it must merge without conflicts, keep AGENTS.md
-  # current, merge ci.yml, and leave the samples, PROJECT_AGENTS.md, docs/ and project.yml
-  # alone (see `_exclude` and `_skip_if_exists` in copier.yml).
+  # them, dev.py, AGENTS.md, docs/ and CI, splitting its Windows tests in two as it does: it
+  # must merge without conflicts, keep AGENTS.md current, merge ci.yml, and leave the samples,
+  # PROJECT_AGENTS.md, docs/ and project.yml alone (see `_exclude` and `_skip_if_exists` in
+  # copier.yml).
   update:
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -155,8 +187,8 @@ jobs:
           sed -i -e 's/^dev = \[{ include-group = "template-dev" }\]$/dev = [\n    { include-group = "template-dev" },\n    "tzdata",\n]/' \
             -e 's/^    # The project.s own below:$/&\n    "OWN",/' pyproject.toml
           test "$(grep -cE '^    "(tzdata|OWN)",$' pyproject.toml)" = 3
-          sed -i 's/^    timeout-minutes: 5$/    timeout-minutes: 6/' .github/workflows/ci.yml
-          grep -q '^    timeout-minutes: 6$' .github/workflows/ci.yml
+          sed -i 's/^    timeout-minutes: 5$/    timeout-minutes: 4/' .github/workflows/ci.yml
+          grep -q '^    timeout-minutes: 4$' .github/workflows/ci.yml
           echo '# The project'"'"'s own jobs.' >> .github/workflows/project.yml
           git commit -qam own
           # A later template commit.
@@ -168,7 +200,8 @@ jobs:
             sed -i -e 's/"ruff>=[^"]*"/"ruff>=99.0"/' -e 's/^    # The project.s own below:$/    "LATER",\n&/' \
               template/pyproject.toml.jinja
             git commit -qam later)
-          uvx copier@9.19.1 update --quiet --defaults --vcs-ref HEAD
+          # Splitting the Windows tests, as a project would, in the same update.
+          uvx copier@9.19.1 update --quiet --defaults --vcs-ref HEAD -d test_shards_windows=2
           git status --short
           test -z "$(git diff --name-only --diff-filter=U)"
           if git grep -nE '^(<<<<<<<|>>>>>>>) '; then exit 1; fi
@@ -177,7 +210,10 @@ jobs:
             PROJECT_AGENTS.md docs/issues.md docs/roadmap.md .github/workflows/project.yml
           grep -q '^<!-- A later change -->' AGENTS.md
           grep -q '^# A later change' .github/workflows/ci.yml
-          grep -q '^    timeout-minutes: 6$' .github/workflows/ci.yml
+          grep -q '^    timeout-minutes: 4$' .github/workflows/ci.yml
+          grep -q '^test_shards_windows: 2$' .copier-answers.yml
+          grep -q '^          - {os: windows-latest, python: "3.15", shard: 2, shards: 2}$' \
+            .github/workflows/ci.yml
           grep -q '^# A later change' dev.py
           grep -q '^# A later change' src/sample_tool/__main__.py
           grep -q '"ruff>=99.0"' pyproject.toml

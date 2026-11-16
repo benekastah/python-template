@@ -36,6 +36,8 @@ Development section says how to set up a clone and run the checks.
 - `dev.py` sets up a clone and runs the checks, the same on every system (on Windows, run
   it with `py`); `python3 dev.py` lists its commands. It's the template's: this project's
   own commands and install steps go in `dev_project.py` (see `dev.py`'s docstring).
+- `dev` is a reserved module name: `dev.py tests` loads `dev.py` into pytest as `dev`, which
+  would hide a test helper of that name.
 - Dev tooling goes in `dev.py` or `dev_project.py`, not shell scripts; the git hooks are
   the only ones. The pre-commit hook formats and lint-fixes staged files; the pre-push hook
   runs every check before a push to `main`.
@@ -61,9 +63,30 @@ Development section says how to set up a clone and run the checks.
   session and copy them for each test; and prefer one long-lived process (e.g.
   `git cat-file --batch`) over one per request.
 - **Each CI job has a time limit** (`timeout-minutes`), about 20% over how long it takes in
-  finished runs, rounded up to a whole minute. If a job runs into its limit, speed it up if
-  you can (the tests, or the code itself); only if you can't, raise the limit, saying why in
-  the commit.
+  finished runs, rounded up to a whole minute, and never over 5 minutes, so no job keeps a
+  run waiting long. If a job runs into its limit, speed it up if you can (the tests, or the
+  code itself); if you can't, raise the limit, up to 5, saying why in the commit; past that,
+  split the job.
+- **Tests too slow for one job are split.** If a system's tests take over about 4 minutes in
+  CI even once sped up, run them in several jobs there (shards), each with a share of the
+  tests: set how many in the project's Copier answers, `test_shards_linux`,
+  `test_shards_macos` or `test_shards_windows` (1 to 8, 1 by default). If
+  `.copier-answers.yml` lists them already, this changes the answer alone, without the
+  template's later changes:
+
+  ```sh
+  uvx copier update --defaults -d test_shards_windows=3 \
+      --vcs-ref "$(sed -n "s/^_commit: //p" .copier-answers.yml | tr -d "'")"
+  ```
+
+  If it doesn't, that template commit has no such question, and the command quietly changes
+  nothing: run `uvx copier update --defaults -d test_shards_windows=3`, which takes in the
+  template's later changes too. Either way, check that `git diff` shows the new answer and
+  `ci.yml`'s new jobs, then commit them. Each of a system's jobs, with each Python, runs
+  `python3 dev.py tests --shard I/N` (see `dev.py`), which you can run locally too. A shard
+  left with no tests fails its job, so keep to fewer shards than tests; and each job sets up
+  again, so split no more than you need. Coverage runs in one job, on Linux, whatever the
+  answers say.
 - **CI is the template's `ci.yml` and `cancel.yml`, and the project's `project.yml`.**
   `.github/workflows/ci.yml` is the template's (`copier update` keeps it current): the static
   checks, the tests, coverage, and the `CI passed` job a ruleset requires. The project's own

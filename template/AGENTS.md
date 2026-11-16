@@ -65,6 +65,20 @@ Development section says how to set up a clone and run the checks.
   run waiting long. If a job runs into its limit, speed it up if you can (the tests, or the
   code itself); if you can't, raise the limit, up to 5, saying why in the commit; past that,
   split the job.
+- **Tests too slow for one job are split.** If a system's tests take over about 4 minutes in
+  CI even once sped up, run them in several jobs there (shards), each with a third, say, of
+  the tests: set how many in the project's Copier answers, `test_shards_linux`,
+  `test_shards_macos` or `test_shards_windows` (1 by default), and commit what it changes.
+  Without taking in the template's later changes:
+
+  ```sh
+  uvx copier update --defaults -d test_shards_windows=3 \
+      --vcs-ref "$(sed -n "s/^_commit: //p" .copier-answers.yml | tr -d "'")"
+  ```
+
+  Each of a system's jobs, with each Python, runs `python3 dev.py tests --shard I/N` (see
+  `dev.py`), which you can run locally too. Each job sets up again, so split no more than you
+  need. Coverage runs in one job, on Linux, whatever the answers say.
 - **CI is the template's `ci.yml` and `cancel.yml`, and the project's `project.yml`.**
   `.github/workflows/ci.yml` is the template's (`copier update` keeps it current): the static
   checks, the tests, coverage, and the `CI passed` job a ruleset requires. The project's own

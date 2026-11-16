@@ -81,7 +81,9 @@ jobs:
       # uv.lock, and in CI fails if it's out of date.
       - run: uv run --no-project python dev.py static
 
-  # The tests, on every system, with the oldest and newest Python.
+  # The tests, on every system, with the oldest and newest Python, each split into as many jobs
+  # (shards) as the project's Copier answers say for that system: test_shards_linux,
+  # test_shards_macos and test_shards_windows (see AGENTS.md).
   tests:
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -89,9 +91,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-{% endraw %}        python: ["{{ min_python }}", "{{ newest_python }}"]
-{% raw %}    name: ${{ matrix.os }}, Python ${{ matrix.python }}
+        include:
+{%- endraw %}
+{%- for os, shards in [
+  ("ubuntu-latest", test_shards_linux),
+  ("macos-latest", test_shards_macos),
+  ("windows-latest", test_shards_windows),
+] %}
+{%- for python in [min_python, newest_python] %}
+{%- for shard in range(1, shards + 1) %}
+          - {os: {{ os }}, python: "{{ python }}", shard: {{ shard }}, shards: {{ shards }}}
+{%- endfor %}
+{%- endfor %}
+{%- endfor %}
+{% raw %}    # "windows-latest, Python 3.11", and " (2/3)" after it for the second of three shards.
+    name: >-
+      ${{ matrix.os }}, Python ${{ matrix.python }}${{ matrix.shards > 1 &&
+      format(' ({0}/{1})', matrix.shard, matrix.shards) || '' }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -100,7 +116,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python }}
-      - run: uv run --no-project python dev.py tests
+      - run: uv run --no-project python dev.py tests --shard ${{ matrix.shard }}/${{ matrix.shards }}
 
   # What the tests run, once, on Linux with the newest Python: each file's lines and branches
   # they don't, in the job's summary. A report rather than a check until pyproject.toml's

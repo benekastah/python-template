@@ -17,7 +17,8 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
 - **Git hooks**: pre-commit formats and lint-fixes the staged Python files, pre-push runs
   every check before a push to `main`.
 - **GitHub Actions**: the static checks once, the tests on Linux, macOS and Windows with the
-  oldest and newest Python supported, a coverage report in the job's summary (a check once
+  oldest and newest Python supported (on a system where they're slow, split over several
+  jobs, as the project's answers say), a coverage report in the job's summary (a check once
   `fail_under` is set), a time limit of at most 5 minutes on each job, a docs-only skip,
   cancelling superseded runs and a pull request's run once it merges or closes, and one
   `CI passed` job for a ruleset to require. The jobs set up uv and Python with a composite
@@ -41,8 +42,9 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
 uvx copier copy gh:benekastah/python-template my-tool
 ```
 
-Copier asks for the project's name, package name, description, author, GitHub user, and the
-oldest and newest Python to support, then says what to run next: `git init`, then
+Copier asks for the project's name, package name, description, author, GitHub user, the
+oldest and newest Python to support, and how many CI jobs to split the tests into on each
+system (1 to start with), then says what to run next: `git init`, then
 `python3 dev.py install` and `python3 dev.py check`. Commit everything it made, `uv.lock` and
 `.copier-answers.yml` included.
 
@@ -55,7 +57,14 @@ later changes:
 uvx copier update --defaults
 ```
 
-Copier merges them with the project's own changes, marking conflicts as git does. Five files
+Copier merges them with the project's own changes, marking conflicts as git does. It keeps
+the project's answers, and gives a question added since its default; `-d NAME=VALUE` changes
+an answer. A project whose tests take too long for one CI job on a system splits them over
+several there, with `test_shards_linux`, `test_shards_macos` or `test_shards_windows` (each 1
+by default), e.g. `uvx copier update --defaults -d test_shards_windows=3`; its `AGENTS.md`
+says how to do that without taking in the template's other changes.
+
+Five files
 are starting points, the project's own from the start, and an update never changes them once
 written (though it writes one again if it's gone): `PROJECT_AGENTS.md`, `README.md`,
 `docs/issues.md`, `docs/roadmap.md` and `.github/workflows/project.yml`, the project's own CI
@@ -143,15 +152,16 @@ twice), but before committing the update:
 
 ## Working on the template
 
-`template/` is what Copier renders; files ending in `.jinja` are filled in with the
-answers, the rest are copied as they are. The questions are in `copier.yml`. CI
+`template/` is what Copier renders; files ending in `.jinja` are filled in with the answers,
+the rest are copied as they are. The questions are in `copier.yml`. CI
 (`.github/workflows/template.yml`) makes a project from the template and runs its
-`dev.py check` on Linux, macOS and Windows, and lints its workflows with
-[actionlint](https://github.com/rhysd/actionlint). Its `update` job updates a project to a
-later template commit, checking that the update merges without conflicts, keeps `AGENTS.md`
-and `ci.yml` current, and leaves the samples, `PROJECT_AGENTS.md`, `docs/` and `project.yml`
-alone. A pull request that changes only Markdown outside `template/` skips all of that. To try
-a change by hand:
+`dev.py check` on Linux, macOS and Windows, checks there that the shards `dev.py tests --shard` makes
+run every test exactly once between them, and lints its workflows, and those of a project with
+shards, with [actionlint](https://github.com/rhysd/actionlint). Its `update` job updates a
+project to a later template commit, changing an answer as it does, checking that the update
+merges without conflicts, keeps `AGENTS.md` and `ci.yml` current, and leaves the samples,
+`PROJECT_AGENTS.md`, `docs/` and `project.yml` alone. A pull request that changes only Markdown
+outside `template/` skips all of that. To try a change by hand:
 
 ```sh
 uvx copier copy --defaults --vcs-ref HEAD -d project_name=sample-tool \

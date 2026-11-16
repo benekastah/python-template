@@ -128,8 +128,10 @@ jobs:
   project:
     needs: changes
     uses: ./.github/workflows/project.yml
+    # Without permissions here, a called workflow gets the repository's default ones. This is
+    # the most project.yml's jobs can have: a called workflow can only lower it.
     permissions:
-      contents: read  # without this, a called workflow gets the repository's default permissions
+      contents: read
     secrets: inherit  # project.yml is this repository's own code, like this file
     with:
       context: >-
@@ -138,7 +140,8 @@ jobs:
 {% raw %}
   # The one check a ruleset on main should require, so changing the jobs doesn't change what's
   # required. It runs even if a check failed (a skipped required check would count as
-  # passing), and fails unless every check passed, or docs alone changed.
+  # passing), and fails unless project.yml's jobs passed and, unless docs alone changed, so
+  # did every other check.
   passed:
     name: CI passed
     if: always()

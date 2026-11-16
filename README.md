@@ -71,7 +71,9 @@ jobs. The rest stays the template's, so an update keeps it current:
   merges like the rest. A job in `project.yml` reads what `ci.yml` passes it from one JSON
   input, `context`: `code` (false when docs alone changed, to skip with
   `if: fromJSON(inputs.context).code`), `min_python` and `newest_python`. The template can
-  add keys to it without breaking a project. A job there can't `needs` a job in `ci.yml`.
+  add keys to it without breaking a project. A job there can't `needs` a job in `ci.yml`,
+  and gets at most `contents: read`: one needing more (to publish, say) goes in a workflow of
+  its own.
 
 Copier merges the template's changes to these with the project's, so a Dependabot bump to an
 action in them can conflict with the template's: keep the newer version.

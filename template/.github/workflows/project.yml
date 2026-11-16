@@ -5,7 +5,9 @@
 # Add jobs under `jobs:` as in any workflow. Each checks out the repository, then can set up
 # uv and Python with ./.github/actions/setup. Give each a time limit (see AGENTS.md). Don't
 # set `concurrency` here: ci.yml's covers this run, and a group of the same name would cancel
-# it.
+# it. Jobs here get at most `contents: read` (ci.yml's grant, which a called workflow can only
+# lower): one needing more, to comment on a pull request or to publish, say, belongs in a
+# workflow of its own, outside CI passed.
 name: project
 
 on:

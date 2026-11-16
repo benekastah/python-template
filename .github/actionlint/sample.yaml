@@ -1,0 +1,6 @@
+# actionlint's settings for the project template.yml makes.
+paths:
+  # The placeholder job is `if: false` on purpose: it never runs.
+  .github/workflows/project.yml:
+    ignore:
+      - 'constant expression "false" in condition'

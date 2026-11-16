@@ -18,8 +18,11 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   every check before a push to `main`.
 - **GitHub Actions**: the static checks once, the tests on Linux, macOS and Windows with the
   oldest and newest Python supported, a coverage report in the job's summary (a check once
-  `fail_under` is set), per-job time limits, a docs-only skip, and one `CI passed` job for a
-  ruleset to require.
+  `fail_under` is set), per-job time limits, a docs-only skip, cancelling superseded runs,
+  and one `CI passed` job for a ruleset to require. The jobs set up uv and Python with a
+  composite action, `.github/actions/setup`. `copier update` keeps all that current, while
+  the project's own jobs go in `.github/workflows/project.yml`, which `CI passed` waits for
+  too.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
 - **Agent instructions** in two files, which `CLAUDE.md` imports. `AGENTS.md` is the template's,
@@ -54,12 +57,26 @@ uvx copier update --defaults
 
 Copier merges them with the project's own changes, marking conflicts as git does. Five files
 are starting points, the project's own from the start, and an update never changes them once
-written (though it writes one again if it's gone):
-`PROJECT_AGENTS.md`, `README.md`, `docs/issues.md`, `docs/roadmap.md` and
-`.github/workflows/check.yml`, since each project's CI
-grows its own way. `dev.py`, `AGENTS.md` and `CLAUDE.md` stay the template's: a project adds
-commands and install steps in its own `dev_project.py` (see `dev.py`'s docstring), and its own
-rules for agents in `PROJECT_AGENTS.md`.
+written (though it writes one again if it's gone): `PROJECT_AGENTS.md`, `README.md`,
+`docs/issues.md`, `docs/roadmap.md` and `.github/workflows/project.yml`, the project's own CI
+jobs. The rest stays the template's, so an update keeps it current:
+
+- `dev.py`: a project adds commands and install steps in its own `dev_project.py` (see
+  `dev.py`'s docstring).
+- `AGENTS.md` and `CLAUDE.md`: a project adds its own rules for agents in
+  `PROJECT_AGENTS.md`.
+- `.github/workflows/ci.yml` and the action it sets up jobs with, `.github/actions/setup`:
+  the static checks, the tests, coverage, the time limits, cancelling superseded runs, and
+  `CI passed`, which waits for `project.yml`'s jobs too (`ci.yml` calls it), so they gate
+  merges like the rest. A job in `project.yml` reads what `ci.yml` passes it from one JSON
+  input, `context`: `code` (false when docs alone changed, to skip with
+  `if: fromJSON(inputs.context).code`), `min_python` and `newest_python`. The template can
+  add keys to it without breaking a project. A job there can't `needs` a job in `ci.yml`,
+  and gets at most `contents: read`: one needing more (to publish, say) goes in a workflow of
+  its own.
+
+Copier merges the template's changes to these with the project's, so a Dependabot bump to an
+action in them can conflict with the template's: keep the newer version.
 
 The samples a project rewrites are its own too: an update never changes
 `src/<package_name>/cli.py`, `src/<package_name>/__init__.py` or `tests/test_cli.py`, nor
@@ -73,8 +90,10 @@ that line, e.g. to raise a version. A project made before `template-dev` existed
 `dev` conflicts once on it: keep the template's lines, and move its own items into `dev`.
 
 To bring an existing project under the template, move its `AGENTS.md` to `PROJECT_AGENTS.md`
-(as in step 1 below), run `copier copy` into its clone, keep what's the project's own in each
-conflict, and commit the result with the answers file.
+(as in step 1 of "Moving a project's rules to PROJECT_AGENTS.md" below), run `copier copy`
+into its clone, keep what's the project's own in each conflict, move its own CI jobs into
+`project.yml` (as in "Moving to `ci.yml` from `check.yml`" below), and commit the result with
+the answers file.
 
 ### Moving a project's rules to PROJECT_AGENTS.md
 
@@ -102,6 +121,24 @@ new layout once, before that update:
    cp "$tmp/AGENTS.md" AGENTS.md
    ```
 
+### Moving to `ci.yml` from `check.yml`
+
+A project made before the template owned its CI has a `.github/workflows/check.yml` of its
+own. The update that brings in `ci.yml` deletes `check.yml`, even if the project changed it,
+without marking a conflict. Leave it deleted (with both, every push would run the full CI
+twice), but before committing the update:
+
+1. Look for what the project changed in it: `git log -p -- .github/workflows/check.yml`.
+2. Move the project's own jobs into `project.yml`, in place of its placeholder `none` job,
+   setting up with `./.github/actions/setup` after the checkout, and taking the Pythons
+   from `fromJSON(inputs.context)` (see `project.yml`). Where `CI passed` needed them, it
+   now waits for all of `project.yml`.
+3. Make any changes the project made to the template's jobs (a raised time limit, say) in
+   `ci.yml`.
+4. Replace `check.yml` in what the project's README and `PROJECT_AGENTS.md` say about CI.
+5. Commit, with `ci.yml`, `project.yml` and `.github/actions/`. A ruleset requiring
+   `CI passed` needs no change.
+
 ## Working on the template
 
 `template/` is what Copier renders; files ending in `.jinja` are filled in with the
@@ -110,7 +147,8 @@ answers, the rest are copied as they are. The questions are in `copier.yml`. CI
 `dev.py check` on Linux, macOS and Windows, and lints its workflows with
 [actionlint](https://github.com/rhysd/actionlint). Its `update` job updates a project to a
 later template commit, checking that the update merges without conflicts, keeps `AGENTS.md`
-current, and leaves the samples, `PROJECT_AGENTS.md` and `docs/` alone. To try a change by hand:
+and `ci.yml` current, and leaves the samples, `PROJECT_AGENTS.md`, `docs/` and `project.yml`
+alone. To try a change by hand:
 
 ```sh
 uvx copier copy --defaults --vcs-ref HEAD -d project_name=sample-tool \
@@ -127,3 +165,8 @@ need elsewhere.
 
 Never change `pyproject.toml.jinja`'s `dev = [...]` line or its `# The project's own below:`
 lines: projects add to and below them, so a change conflicts in each one.
+
+Never rename or remove a key of the `context` that `ci.yml` passes `project.yml`, or change
+its type; only add keys. Nothing checks the keys a project's job reads: a missing one reads as
+null, so a job with `if: fromJSON(inputs.context).code` would skip without a word, and
+`CI passed` accepts a skipped `project.yml`.

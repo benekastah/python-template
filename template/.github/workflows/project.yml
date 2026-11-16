@@ -1,0 +1,53 @@
+# This project's own CI jobs. ci.yml (the template's) runs them alongside its checks, in the
+# same run, and its "CI passed" job fails if one of them fails, so they gate merges too. Copier
+# wrote this file once: it's the project's, and `copier update` never touches it.
+#
+# Add jobs under `jobs:` as in any workflow. Each checks out the repository, then can set up
+# uv and Python with ./.github/actions/setup. Give each a time limit (see AGENTS.md). Don't
+# set `concurrency` here: ci.yml's covers this run, and a group of the same name would cancel
+# it.
+name: project
+
+on:
+  workflow_call:
+    # ci.yml passes each of these, so keep declaring them all, used or not.
+    inputs:
+      code:
+        description: >-
+          Whether anything but docs changed. A job checking only code can skip otherwise, with
+          `if: inputs.code`.
+        type: boolean
+        required: true
+      min-python:
+        description: The oldest Python the project supports, e.g. "3.11"
+        type: string
+        required: true
+      newest-python:
+        description: The newest Python CI tests it on, e.g. "3.15"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  # A workflow needs a job. This one never runs, so it costs nothing; replace it with the
+  # project's first, e.g.:
+  #
+  #   build:
+  #     if: inputs.code
+  #     runs-on: ubuntu-latest
+  #     timeout-minutes: 5
+  #     steps:
+  #       - uses: actions/checkout@...  # pinned as in ci.yml
+  #         with:
+  #           persist-credentials: false
+  #       - uses: ./.github/actions/setup
+  #         with:
+  #           python-version: ${{ inputs.min-python }}
+  #       - run: uv build
+  none:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - run: "true"

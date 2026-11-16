@@ -9,7 +9,7 @@ _skip_if_exists:
   - docs/issues.md
   - docs/roadmap.md
   - README.md
-  - .github/workflows/check.yml
+  - .github/workflows/project.yml
 
 # Samples a project rewrites as its own code: `copier update` leaves them alone, even where
 # the project deleted one, so a template change to them never reaches existing projects.

@@ -1,10 +1,10 @@
 # What each CI job needs before running dev.py: uv, and the Python asked for. The template's,
-# kept current by `copier update`. A job uses it after checking out the repository (a local
-# action is read from the checkout):
+# kept current by `copier update`. ci.yml's jobs use it, and project.yml's can too, after
+# checking out the repository (a local action is read from the checkout):
 #
 #   - uses: ./.github/actions/setup
 #     with:
-#       python-version: "3.11"
+#       python-version: ${{ inputs.min-python }}
 name: Set up
 description: Install uv and a Python.
 

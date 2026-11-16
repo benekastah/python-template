@@ -67,9 +67,13 @@ jobs:
           git -C "$RUNNER_TEMP/sample-tool" init -q  # actionlint looks for the repository's root
           image=$(docker build -q .github/actionlint)
           rc=0
-          for repo in "$GITHUB_WORKSPACE" "$RUNNER_TEMP/sample-tool"; do
-            docker run --rm --network none -v "$repo:/repo:ro" -w /repo "$image" || rc=1
-          done
+          lint() {
+            docker run --rm --network none -v "$1:/repo:ro" \
+              -v "$GITHUB_WORKSPACE/.github/actionlint:/config:ro" -w /repo "$image" "${@:2}" ||
+              rc=1
+          }
+          lint "$GITHUB_WORKSPACE"
+          lint "$RUNNER_TEMP/sample-tool" -config-file /config/sample.yaml
           exit "$rc"
 
   # `copier update` in a project that has made the samples, PROJECT_AGENTS.md and docs/ its own

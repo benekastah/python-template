@@ -90,6 +90,7 @@ of a PR's description, a review, and each answer to a finding.
 - **The reviewer** reads the diff against the PR's base, its commit messages, this file and
   `PROJECT_AGENTS.md`, and changes nothing. It looks for, most important first:
   - correctness: obviously correct is much better than just correct;
+  - security: use the right secure library rather than writing our own;
   - surprises: anything surprising that's necessary has a comment and a test, only necessary
     changes are accepted, and nothing outside the change is left inconsistent with it;
   - tests: missing ones (new features fully covered), and low-value ones (would it fail if the
@@ -98,7 +99,6 @@ of a PR's description, a review, and each answer to a finding.
   - docs, docstrings and comments that are missing or untrue, or that only describe a prior
     state of the code or an idea that was rejected;
   - dead code; readability; terseness;
-  - security: secure libraries, not a version of our own of what the right library does;
   - fully qualified imports rather than relative ones;
   - size (a large PR should be split, where it can be), risk, importance (does it move the
     needle?) and cost.

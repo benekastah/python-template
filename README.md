@@ -92,9 +92,10 @@ new layout once, before that update:
 
    ```sh
    tmp=$(mktemp -d)
-   uvx copier copy --defaults --data-file .copier-answers.yml \
-       --vcs-ref "$(sed -n 's/^_commit: //p' .copier-answers.yml)" -x '*' -x '!AGENTS.md' \
-       "$(sed -n 's/^_src_path: //p' .copier-answers.yml)" "$tmp"
+   uvx copier copy -q --defaults --data-file .copier-answers.yml \
+       --vcs-ref "$(sed -n "s/^_commit: //p" .copier-answers.yml | tr -d "'")" \
+       -x '*' -x '!AGENTS.md' \
+       "$(sed -n "s/^_src_path: //p" .copier-answers.yml | tr -d "'")" "$tmp"
    cp "$tmp/AGENTS.md" AGENTS.md
    ```
 

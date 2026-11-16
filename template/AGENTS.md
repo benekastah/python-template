@@ -25,10 +25,9 @@ Development section says how to set up a clone and run the checks.
   `PROJECT_AGENTS.md` for the shape of the code and its rules, and the docstrings and
   comments on the code you touch. Before committing, search the docs for the names you
   renamed, moved or removed.
-- **`docs/roadmap.md` is what's left to build, `docs/issues.md` what's wrong with what's
-  built** (bugs, gaps against the rules, what's untried where it runs). A change removes
-  what it finishes or fixes from them, and adds what it leaves wrong. Each starts as a header and
-  is this project's own.
+- **Keep `docs/roadmap.md` (what's left to build) and `docs/issues.md` (what's wrong with
+  what's built) current**: a change removes what it finishes or fixes, and adds what it
+  leaves wrong.
 - **Commit messages say why**, not just what.
 - **No new runtime dependency** without a good reason: prefer the standard library.
 

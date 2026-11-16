@@ -85,9 +85,6 @@ jobs:
 {% raw %}    name: ${{ matrix.os }}, Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     steps:
-      # Spotlight indexes each file the tests write, on a runner thrown away after the job.
-      - if: runner.os == 'macOS'
-        run: sudo mdutil -a -i off
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false

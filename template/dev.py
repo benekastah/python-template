@@ -209,11 +209,20 @@ def pytest_collection_modifyitems(config: "pytest.Config", items: "list[pytest.I
 
 
 def coverage(pytest_args: list[str]) -> None:
-    """The tests under coverage.py, in one process, then each file's lines and branches they
-    didn't run (see `[tool.coverage]` in pyproject.toml); htmlcov/index.html shows them in the
-    source."""
+    """The tests under coverage.py, spread over the cores as in `tests` (pyproject.toml has it
+    measure each worker), then each file's lines and branches they didn't run (see
+    `[tool.coverage]`); htmlcov/index.html shows them in the source. The workers' data is
+    combined into .coverage even when a test fails, for CI's report."""
     venv()
-    run(tool("coverage"), "run", "-m", "pytest", "-q", "--numprocesses", "0", *pytest_args)
+    run(tool("coverage"), "erase")  # an interrupted run's data files would be combined too
+    tested = subprocess.run(
+        [tool("coverage"), "run", "-m", "pytest", "-q", "-p", "dev", *pytest_args],
+        cwd=ROOT,
+        check=False,
+    )
+    combined = subprocess.run([tool("coverage"), "combine", "--quiet"], cwd=ROOT, check=False)
+    if tested.returncode != 0 or combined.returncode != 0:
+        sys.exit(tested.returncode or combined.returncode)
     run(tool("coverage"), "report")
     run(tool("coverage"), "html", "--quiet")
     print("line by line: htmlcov/index.html")

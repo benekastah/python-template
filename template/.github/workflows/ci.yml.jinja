@@ -120,7 +120,10 @@ jobs:
 
   # What the tests run, once, on Linux with the newest Python: each file's lines and branches
   # they don't, in the job's summary. A report rather than a check until pyproject.toml's
-  # [tool.coverage.report] sets fail_under, below which this job, and so CI, fails.
+  # [tool.coverage.report] sets fail_under, below which this job, and so CI, fails. In parallel
+  # like the tests job, so it takes about as long. Were that ever over the limit, it could be
+  # sharded too: `coverage run -m pytest -p dev --shard I/N` in each job, each uploading its
+  # .coverage.* files, then one job to `coverage combine` them and report.
   coverage:
     needs: changes
     if: needs.changes.outputs.code == 'true'

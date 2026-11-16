@@ -51,7 +51,8 @@ uvx copier update --defaults
 ```
 
 Copier merges them with the project's own changes, marking conflicts as git does. Three files
-are starting points, the project's own from the start, and an update never touches them:
+are starting points, the project's own from the start, and an update never changes them once
+written (though it writes one again if it's gone):
 `PROJECT_AGENTS.md`, `README.md` and `.github/workflows/check.yml`, since each project's CI
 grows its own way. `dev.py`, `AGENTS.md` and `CLAUDE.md` stay the template's: a project adds
 commands and install steps in its own `dev_project.py` (see `dev.py`'s docstring), and its own
@@ -80,16 +81,21 @@ new layout once, before that update:
 
 1. `git mv AGENTS.md PROJECT_AGENTS.md`, and remove from it what the template's
    [`AGENTS.md`](template/AGENTS.md) says, keeping the shape of the code, the project's own
-   rules, and where it differs from the template's. Commit.
+   rules, and where it differs from the template's. In the project's README (which an update
+   never changes) and its other docs, point to `PROJECT_AGENTS.md` where they mean the
+   project's rules, and say `AGENTS.md` is the template's, as a new project's README does.
+   Commit.
 2. `uvx copier update --defaults`. It keeps `PROJECT_AGENTS.md`, and `CLAUDE.md` now imports
    both files.
-3. Fetch the template's `AGENTS.md`, at the commit the update recorded, and commit it with the
-   update. Later updates keep it current.
+3. Render the template's `AGENTS.md` alone, at the commit and from the source the update
+   recorded, and commit it with the update. Later updates keep it current.
 
    ```sh
-   commit=$(sed -n 's/^_commit: //p' .copier-answers.yml)
-   curl -fsSL "https://raw.githubusercontent.com/benekastah/python-template/$commit/template/AGENTS.md" \
-       -o AGENTS.md
+   tmp=$(mktemp -d)
+   uvx copier copy --defaults --data-file .copier-answers.yml \
+       --vcs-ref "$(sed -n 's/^_commit: //p' .copier-answers.yml)" -x '*' -x '!AGENTS.md' \
+       "$(sed -n 's/^_src_path: //p' .copier-answers.yml)" "$tmp"
+   cp "$tmp/AGENTS.md" AGENTS.md
    ```
 
 ## Working on the template

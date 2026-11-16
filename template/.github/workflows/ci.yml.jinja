@@ -98,7 +98,7 @@ jobs:
   ("macos-latest", test_shards_macos),
   ("windows-latest", test_shards_windows),
 ] %}
-{%- for python in [min_python, newest_python] %}
+{%- for python in [min_python, newest_python] | unique %}
 {%- for shard in range(1, shards + 1) %}
           - {os: {{ os }}, python: "{{ python }}", shard: {{ shard }}, shards: {{ shards }}}
 {%- endfor %}

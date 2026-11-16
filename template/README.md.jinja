@@ -45,8 +45,8 @@ python3 dev.py coverage    # the tests under coverage.py, and the lines they don
 
 If the formatting check fails, `.venv/bin/ruff format` formats the code;
 `.venv/bin/ruff check --fix` fixes what it can of the linter's findings. The pre-commit hook
-does both for the files you commit, and the pre-push hook runs every check before a push to
-`main`.
+does both for the files you commit, and the pre-push hook runs the static checks before every
+push. CI runs the tests.
 
 Dependencies are locked in `uv.lock`. `dev.py` installs from it with uv, and updates it when
 `pyproject.toml`'s dependencies change; commit both. Without uv, `dev.py` installs with pip,

@@ -15,7 +15,7 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
 - **Ruff** for formatting and linting, and **basedpyright** in strict mode for types.
 - **pytest** with pytest-xdist (one worker per CPU), and coverage.py.
 - **Git hooks**: pre-commit formats and lint-fixes the staged Python files, pre-push runs
-  every check before a push to `main`.
+  the static checks before every push.
 - **GitHub Actions**: the static checks once, the tests on Linux, macOS and Windows with the
   oldest and newest Python supported (on a system where they're slow, split over several
   jobs, as the project's answers say), a coverage report in the job's summary (a check once

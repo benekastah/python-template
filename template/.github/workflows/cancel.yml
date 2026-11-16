@@ -27,7 +27,7 @@ jobs:
   # A workflow needs a job. This one never runs, so it takes no runner: only the run's place in
   # the group matters. (Its condition is never true here; actionlint rejects a constant one.)
   cancel:
-    name: Cancel the pull request's CI run
+    name: Join CI's group to cancel its run (never runs)
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 1

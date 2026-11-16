@@ -138,8 +138,8 @@ twice), but before committing the update:
 3. Make any changes the project made to the template's jobs (a raised time limit, say) in
    `ci.yml`.
 4. Replace `check.yml` in what the project's README and `PROJECT_AGENTS.md` say about CI.
-5. Commit, with `ci.yml`, `project.yml` and `.github/actions/`. A ruleset requiring
-   `CI passed` needs no change.
+5. Commit, with `ci.yml`, `cancel.yml`, `project.yml` and `.github/actions/`. A ruleset
+   requiring `CI passed` needs no change.
 
 ## Working on the template
 

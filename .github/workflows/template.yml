@@ -1,5 +1,5 @@
 # Makes a project from the template and runs its checks on Linux, macOS and Windows, with the
-# oldest and newest Python the template defaults to.
+# oldest and newest Python the template defaults to, and lints its workflows and this one.
 name: template
 
 on:
@@ -24,6 +24,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python: ["3.11", "3.15"]
+        # The one job that lints the workflows. If the Pythons above change without this, it
+        # adds a job of its own rather than linting nowhere.
+        include:
+          - os: ubuntu-latest
+            python: "3.15"
+            lint: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -49,6 +55,22 @@ jobs:
           git init -q
           uv lock
           uv run --no-project python dev.py check
+      # actionlint, with shellcheck for the scripts, catches a workflow GitHub would reject or
+      # misread (a bad key or expression, an input that isn't declared), which the checks above
+      # never run. Once: the workflows are the same on every system.
+      - name: Lint the workflows
+        if: matrix.lint
+        shell: bash
+        # Read-only and offline: actionlint only reads, and a fork's pull request is linted too.
+        # Each repository is linted even if one fails, so a run shows every error.
+        run: |
+          git -C "$RUNNER_TEMP/sample-tool" init -q  # actionlint looks for the repository's root
+          image=$(docker build -q .github/actionlint)
+          rc=0
+          for repo in "$GITHUB_WORKSPACE" "$RUNNER_TEMP/sample-tool"; do
+            docker run --rm --network none -v "$repo:/repo:ro" -w /repo "$image" || rc=1
+          done
+          exit "$rc"
 
   # `copier update` in a project that has made the samples its own and added to pyproject.toml's
   # lists, to a later template commit that changes the samples, dev.py and the lists: it must

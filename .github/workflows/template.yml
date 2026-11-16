@@ -72,7 +72,7 @@ jobs:
           done
           exit "$rc"
 
-  # `copier update` in a project that has made the samples and PROJECT_AGENTS.md its own and added
+  # `copier update` in a project that has made the samples, PROJECT_AGENTS.md and docs/ its own and added
   # to pyproject.toml's lists, to a later template commit that changes them, dev.py and
   # AGENTS.md: it must merge without conflicts, keep AGENTS.md current, and leave the samples and
   # PROJECT_AGENTS.md alone (see `_exclude` and `_skip_if_exists` in copier.yml).
@@ -106,6 +106,8 @@ jobs:
           echo '"""The real package."""' > src/sample_tool/__init__.py
           echo '"""The real tests."""' > tests/test_cli.py
           echo '- An own rule.' >> PROJECT_AGENTS.md
+          echo '- An own issue.' >> docs/issues.md
+          echo '- An own step.' >> docs/roadmap.md
           sed -i -e 's/^dev = \[{ include-group = "template-dev" }\]$/dev = [\n    { include-group = "template-dev" },\n    "tzdata",\n]/' \
             -e 's/^    # The project.s own below:$/&\n    "OWN",/' pyproject.toml
           test "$(grep -cE '^    "(tzdata|OWN)",$' pyproject.toml)" = 3
@@ -123,7 +125,7 @@ jobs:
           if git grep -nE '^(<<<<<<<|>>>>>>>) '; then exit 1; fi
           test -z "$(git ls-files --others '*.rej')"
           git diff --quiet HEAD -- src/sample_tool/cli.py src/sample_tool/__init__.py tests/test_cli.py \
-            PROJECT_AGENTS.md
+            PROJECT_AGENTS.md docs/issues.md docs/roadmap.md
           grep -q '^<!-- A later change -->' AGENTS.md
           grep -q '^# A later change' dev.py
           grep -q '^# A later change' src/sample_tool/__main__.py

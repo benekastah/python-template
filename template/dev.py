@@ -12,7 +12,8 @@
 On Windows, run it with `py` (`py dev.py check`). The hooks in git_hooks/ call it.
 
 `static` runs every check even when one fails, and `check` runs the tests even when `static`
-fails, so one run reports every failure; the exit status is the first failure's.
+fails, so one run reports every failure; the exit status is the first failure's. `venv` says so
+when it changes uv.lock, which should be committed with the pyproject.toml change behind it.
 
 `tests` runs pytest with this file as a plugin (`-p dev`), which adds `--shard I/N`: it sorts
 the tests by node id and keeps every Nth from the Ith, so the N shards run each test exactly
@@ -130,14 +131,22 @@ def venv() -> None:
     Uses uv when it's installed: from uv.lock, which it updates when pyproject.toml's
     dependencies change, except in CI (where $CI is set), where an out-of-date uv.lock is an
     error. Without uv, it uses venv and pip (25.1+ for --group), which don't read uv.lock.
-    Either makes .venv again when an older Python made it."""
+    Either makes .venv again when an older Python made it.
+
+    Says so when uv changed uv.lock (compared by content, so a rewrite to the same text is
+    silent): it should be committed with the pyproject.toml change that caused it."""
     sources = [ROOT / "pyproject.toml", ROOT / "uv.lock"]
     newest = max(path.stat().st_mtime for path in sources if path.exists())
     if STAMP.exists() and STAMP.stat().st_mtime >= newest:
         return
     print("dev: installing the package and dev dependencies into .venv", file=sys.stderr)
     if shutil.which("uv"):
+        lock = ROOT / "uv.lock"
+        before = lock.read_bytes() if lock.exists() else None
         run("uv", "sync", "--quiet", *(["--locked"] if os.environ.get("CI") else []))
+        after = lock.read_bytes() if lock.exists() else None
+        if after != before:
+            print("dev: uv.lock changed; commit it with pyproject.toml", file=sys.stderr)
     else:
         required = required_python(_pyproject_text())
         cfg = VENV / "pyvenv.cfg"

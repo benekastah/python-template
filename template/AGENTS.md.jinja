@@ -10,6 +10,10 @@ the checks. Keep this file up to date when the shape of the code or a rule here 
 - `src/{{ package_name }}/cli.py`: the `{{ project_name }}` command's entry point.
 - `tests/`: the tests, run with pytest.
 - `dev.py`: setting up a clone and running the checks, on every system (see the README).
+- `pyproject.toml`: partly the template's (see the README's "Updating from the template").
+  Add dev dependencies to `dev` with `uv add --dev`, never to `template-dev`, and add to
+  Ruff's `extend-select` and basedpyright's `include` below their `# The project's own below:`
+  line, which stays as it is.
 
 Describe each module here as the code grows: what it's for, and what it mustn't do.
 

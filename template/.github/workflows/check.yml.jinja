@@ -64,9 +64,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - uses: ./.github/actions/setup
         with:
-          enable-cache: false
           # The oldest Python supported, which basedpyright checks for too.
 {% endraw %}          python-version: "{{ min_python }}"
 {% raw %}      # Through uv: the runner's own `python` may be older than the one uv provides, and
@@ -90,9 +89,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - uses: ./.github/actions/setup
         with:
-          enable-cache: false
           python-version: ${{ matrix.python }}
       - run: uv run --no-project python dev.py tests
 
@@ -108,9 +106,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - uses: ./.github/actions/setup
         with:
-          enable-cache: false
 {% endraw %}          python-version: "{{ newest_python }}"
 {% raw %}      - run: uv run --no-project python dev.py coverage
       # Also when the tests failed or fell short of fail_under, unless there's nothing to report;

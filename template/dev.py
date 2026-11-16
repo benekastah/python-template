@@ -169,8 +169,9 @@ def static() -> None:
 
 def tests(pytest_args: list[str]) -> None:
     """The tests, spread over the machine's cores (pytest-xdist, through pyproject.toml's
-    `addopts`), with this file as a plugin, for `--shard`. pytest imports it as `dev`:
-    `python -m` puts this directory on its path."""
+    `addopts`), with this file as a plugin, for `--shard`. pytest imports it as `dev`, which
+    works because `run` starts it in this directory, and `python -m` puts the working directory
+    on `sys.path`."""
     venv()
     run(tool("python"), "-m", "pytest", "-p", "dev", *pytest_args)
 

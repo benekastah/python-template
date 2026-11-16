@@ -78,19 +78,19 @@ test_shards_linux:
   type: int
   help: How many CI jobs to split the tests into on Linux (1 unless they take over 4 minutes)
   default: 1
-  validator: "{% if test_shards_linux < 1 %}At least 1{% endif %}"
+  validator: "{% if not 1 <= test_shards_linux <= 8 %}From 1 to 8{% endif %}"
 
 test_shards_macos:
   type: int
   help: How many CI jobs to split the tests into on macOS (1 unless they take over 4 minutes)
   default: 1
-  validator: "{% if test_shards_macos < 1 %}At least 1{% endif %}"
+  validator: "{% if not 1 <= test_shards_macos <= 8 %}From 1 to 8{% endif %}"
 
 test_shards_windows:
   type: int
   help: How many CI jobs to split the tests into on Windows (1 unless they take over 4 minutes)
   default: 1
-  validator: "{% if test_shards_windows < 1 %}At least 1{% endif %}"
+  validator: "{% if not 1 <= test_shards_windows <= 8 %}From 1 to 8{% endif %}"
 
 copyright_year:
   type: str

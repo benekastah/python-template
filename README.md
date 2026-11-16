@@ -57,16 +57,15 @@ later changes:
 uvx copier update --defaults
 ```
 
-Copier merges them with the project's own changes, marking conflicts as git does. It keeps
-the project's answers, and gives a question added since its default; `-d NAME=VALUE` changes
-an answer. A project whose tests take too long for one CI job on a system splits them over
-several there, with `test_shards_linux`, `test_shards_macos` or `test_shards_windows` (each 1
-by default), e.g. `uvx copier update --defaults -d test_shards_windows=3`; its `AGENTS.md`
-says how to do that without taking in the template's other changes.
+Copier merges them with the project's own changes, marking conflicts as git does. It keeps the
+project's answers, and gives a question added since its default; `-d NAME=VALUE` changes an
+answer. A project whose tests take too long for one CI job on a system splits them over several
+there, with `test_shards_linux`, `test_shards_macos` or `test_shards_windows` (each 1 by
+default, at most 8), e.g. `uvx copier update --defaults -d test_shards_windows=3`; its
+`AGENTS.md` says how to do that without taking in the template's other changes.
 
-Five files
-are starting points, the project's own from the start, and an update never changes them once
-written (though it writes one again if it's gone): `PROJECT_AGENTS.md`, `README.md`,
+Five files are starting points, the project's own from the start, and an update never changes
+them once written (though it writes one again if it's gone): `PROJECT_AGENTS.md`, `README.md`,
 `docs/issues.md`, `docs/roadmap.md` and `.github/workflows/project.yml`, the project's own CI
 jobs. The rest stays the template's, so an update keeps it current:
 
@@ -155,13 +154,13 @@ twice), but before committing the update:
 `template/` is what Copier renders; files ending in `.jinja` are filled in with the answers,
 the rest are copied as they are. The questions are in `copier.yml`. CI
 (`.github/workflows/template.yml`) makes a project from the template and runs its
-`dev.py check` on Linux, macOS and Windows, checks there that the shards `dev.py tests --shard` makes
-run every test exactly once between them, and lints its workflows, and those of a project with
-shards, with [actionlint](https://github.com/rhysd/actionlint). Its `update` job updates a
-project to a later template commit, changing an answer as it does, checking that the update
-merges without conflicts, keeps `AGENTS.md` and `ci.yml` current, and leaves the samples,
-`PROJECT_AGENTS.md`, `docs/` and `project.yml` alone. A pull request that changes only Markdown
-outside `template/` skips all of that. To try a change by hand:
+`dev.py check` on Linux, macOS and Windows, and checks there that
+`dev.py tests --shard I/N` runs each test in exactly one shard. It lints its workflows, and
+those of a project with shards, with [actionlint](https://github.com/rhysd/actionlint). Its
+`update` job updates a project to a later template commit, changing an answer as it does,
+checking that the update merges without conflicts, keeps `AGENTS.md` and `ci.yml` current, and
+leaves the samples, `PROJECT_AGENTS.md`, `docs/` and `project.yml` alone. A pull request that
+changes only Markdown outside `template/` skips all of that. To try a change by hand:
 
 ```sh
 uvx copier copy --defaults --vcs-ref HEAD -d project_name=sample-tool \

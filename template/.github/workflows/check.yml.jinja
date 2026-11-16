@@ -15,10 +15,10 @@ permissions:
 # branch and holds runners the new one needs (an account runs only so many jobs at once). On
 # main too: merging a stack pushes several commits at once, and only the newest one's run
 # matters when a ruleset requires "CI passed" before merging (setup-github-repo sets one).
-# A commit whose run was cancelled shows as cancelled, not passed or failed.
+# A re-run cancels nothing, so re-running an older commit's run waits for the newest's.
 concurrency:
   group: check-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 # Each job's time limit (timeout-minutes) is about 20% over how long it takes, so a hung job
 # fails soon. If a job runs into it, speed it up if you can, and only then raise the limit (see
@@ -126,8 +126,22 @@ jobs:
     if: always()
     needs: [changes, static, tests, coverage]
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 2
+    permissions:
+      actions: write
     steps:
+      # A cancelled run still runs this job, because of always(). Cancelling it too, which only
+      # force-cancel can, marks it cancelled rather than failed, which blocks a merge just the
+      # same. (A fork's pull request can't, so there it fails.) The next step doesn't run in a
+      # cancelled run, so if the force-cancel hasn't stopped this job within a minute, fail.
+      - name: Cancel this job if the run was cancelled
+        if: cancelled()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/force-cancel"
+          sleep 60
+          exit 1
       - name: Fail unless every check passed
         env:
           CHANGES: ${{ needs.changes.result }}

@@ -121,6 +121,15 @@ jobs:
           git init -q
           uv lock
           uv run --no-project python dev.py check
+      # The pre-push hook runs the static checks only: a failing test must not stop a push.
+      - name: Check that the pre-push hook runs the static checks, not the tests
+        shell: bash
+        working-directory: ${{ runner.temp }}/sample-tool
+        run: |
+          printf '%s\n' 'def test_fails() -> None:' '    x = int("1")' '    assert x == 2' \
+            > tests/test_fails.py
+          sh git_hooks/pre-push < /dev/null
+          rm tests/test_fails.py
       # dev.py's --shard, as ci.yml runs it: the shards' tests, together, are the whole suite's,
       # each once, here too (pytest-xdist imports dev.py in each worker). More tests than the
       # sample's two, so each of the three shards gets several.

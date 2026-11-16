@@ -17,6 +17,10 @@ Development section says how to set up a clone and run the checks.
 - **Every change to behavior comes with tests**, in the same commit, that would fail without
   it, and changes the tests that cover the old behavior. Tests say what's correct, not what
   the code happens to do: don't add a test that pins down a bug.
+- **Work test-first**: write the tests for a change (or a bug) first, run them and see them
+  fail for the reason you expect, then make the change and see them pass. If the code has to
+  be reshaped first for the tests to run (e.g. to inject what they replace), do only that
+  before seeing them fail, so the failure still shows the old behavior.
 - **Docs change with the code**, in the same commit: the README for behavior,
   `PROJECT_AGENTS.md` for the shape of the code and its rules, and the docstrings and
   comments on the code you touch. Before committing, search the docs for the names you

@@ -22,10 +22,10 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   ruleset to require.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
-- **A sample AGENTS.md** (with `CLAUDE.md` pointing to it): the shape of the code, the checks,
-  keeping tests fast, CI's time limits, and the rules for Linux, macOS and Windows, to grow
-  with the project. How to work (PRs, reviews, worktrees, git stack) is left to your global
-  agent instructions.
+- **A sample AGENTS.md** (with `CLAUDE.md` pointing to it): the shape of the code, what a
+  change needs (one kind per PR, its tests and docs), the checks, keeping tests fast, CI's
+  time limits, how PRs are reviewed, and the rules for Linux, macOS and Windows, to grow with
+  the project.
 - A README, an MIT license, and a CLI with two tests, to fill in.
 
 ## Making a project

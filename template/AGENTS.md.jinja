@@ -1,9 +1,7 @@
 # Working on {{ project_name }}
 
-Notes for agents (and people) changing this repo: what's true of this project. How to work
-(PRs, reviews, tests first, worktrees, git stack) is in your global agent instructions. The
-README is the user documentation; its Development section says how to set up a clone and run
-the checks. Keep this file up to date when the shape of the code or a rule here changes.
+Notes for agents (and people) changing this repo. The README is the user documentation; its
+Development section says how to set up a clone and run the checks.
 
 ## Shape of the code
 
@@ -20,6 +18,15 @@ Describe each module here as the code grows: what it's for, and what it mustn't 
 ## Rules for this project
 
 Decisions to keep, each with why.
+
+## Making a change
+
+- **One kind of change per PR**: a refactor, a feature and a fix are separate PRs, each small
+  enough to review whole. When one needs another first, that one lands first, on its own.
+- **Every change to behavior comes with tests**, in the same commit, that would fail without
+  it. Tests say what's correct, not what the code happens to do.
+- **Docs change with the code**, in the same commit: the README for behavior, this file for
+  the shape of the code and its rules, and the docstrings and comments on the code you touch.
 
 ## Tests and checks
 
@@ -41,6 +48,32 @@ Decisions to keep, each with why.
 - **Each CI job has a time limit** (`timeout-minutes` in `.github/workflows/check.yml`),
   about 20% over how long it takes. If a job runs into its limit, speed it up if you can
   (the tests, or the code itself); only if you can't, raise the limit, saying why.
+
+## Reviewing
+
+Every PR is reviewed before it merges, drafts included, by a fresh agent with no context but
+the PR (not a fork of the session that wrote it), so it judges what the code says rather than
+what was meant.
+
+- **The reviewer** reads the diff against the PR's base, its commit messages and this file,
+  and changes nothing. It looks for, most important first: bugs; surprises, and what the
+  change makes inconsistent outside itself; tests that are missing, couldn't fail without
+  the change, or pin down a wrong behavior; docs and comments that are missing or untrue;
+  dead code; readability; security. It checks each finding against the code, and gives it
+  a severity (bug, should-fix, minor), a failure scenario and a fix.
+- **It posts one GitHub review of type COMMENT** (never approving or requesting changes),
+  saying in its first line that an AI agent wrote it, its findings numbered, each inline on
+  its line where it has one (`gh api repos/{owner}/{repo}/pulls/N/reviews`, on the head
+  `gh pr view N --json headRefOid` gives; the JSON in a temporary directory, not the repo).
+- **The PR's author** fixes what it decides to, pushes, then answers every finding (inline
+  ones in their thread, the body's in one PR comment): fixed, with the commit's short hash,
+  or why not.
+- **Fixes are reviewed too**, the same way, on `<reviewed sha>..HEAD`, unless all they
+  change is wording.
+
+After a run of merges, several fresh agents review the whole code at once, each one part (a
+module, the tests, the tooling and CI, the docs against the code), posting their findings on
+one issue; the fixes are PRs as above.
 
 ## Linux, macOS and Windows
 

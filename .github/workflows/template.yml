@@ -17,7 +17,41 @@ concurrency:
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 jobs:
+  # Whether anything but docs changed, as in the projects' ci.yml. A pull request touching only
+  # the repository's own Markdown skips the other jobs; template/ is what projects get, so a
+  # Markdown file there counts as code. main always runs them. No ruleset requires a check
+  # here, so skipped jobs need no gate.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2  # the merge GitHub would make, and its first parent: the base
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -eu
+          if [ "$EVENT" != pull_request ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Its own line, so a failing diff fails the step rather than reading as no code.
+          files=$(git diff --name-only --no-renames HEAD^1 HEAD)
+          if printf '%s\n' "$files" | grep -vE '\.md$' | grep -q . ||
+            printf '%s\n' "$files" | grep -q '^template/'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   sample:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: ${{ matrix.os }}, Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
@@ -84,6 +118,8 @@ jobs:
   # current, merge ci.yml, and leave the samples, PROJECT_AGENTS.md, docs/ and project.yml
   # alone (see `_exclude` and `_skip_if_exists` in copier.yml).
   update:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: copier update
     runs-on: ubuntu-latest
     timeout-minutes: 5

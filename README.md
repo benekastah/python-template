@@ -150,7 +150,8 @@ answers, the rest are copied as they are. The questions are in `copier.yml`. CI
 [actionlint](https://github.com/rhysd/actionlint). Its `update` job updates a project to a
 later template commit, checking that the update merges without conflicts, keeps `AGENTS.md`
 and `ci.yml` current, and leaves the samples, `PROJECT_AGENTS.md`, `docs/` and `project.yml`
-alone. To try a change by hand:
+alone. A pull request that changes only Markdown outside `template/` skips all of that. To try
+a change by hand:
 
 ```sh
 uvx copier copy --defaults --vcs-ref HEAD -d project_name=sample-tool \

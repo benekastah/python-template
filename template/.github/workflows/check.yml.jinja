@@ -14,7 +14,8 @@ permissions:
 # A new push cancels the branch's run still going, which no longer says anything about the
 # branch and holds runners the new one needs (an account runs only so many jobs at once). On
 # main too: merging a stack pushes several commits at once, and only the newest one's run
-# matters, since each pull request had to pass before it merged.
+# matters when a ruleset requires "CI passed" before merging (setup-github-repo sets one).
+# A commit whose run was cancelled shows as cancelled, not passed or failed.
 concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true

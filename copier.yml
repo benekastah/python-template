@@ -9,6 +9,12 @@ _skip_if_exists:
   - README.md
   - .github/workflows/check.yml
 
+# Samples, to become the project's own code: `copier update` leaves them alone, even where
+# the project deleted one. (With `_subdirectory` set, Copier excludes nothing by default.)
+_exclude:
+  - "{% if _copier_operation == 'update' %}src/{{ package_name }}/{% endif %}"
+  - "{% if _copier_operation == 'update' %}tests/test_cli.py{% endif %}"
+
 project_name:
   type: str
   help: The project's name, as installed and as its command (e.g. git-stack)

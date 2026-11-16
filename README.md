@@ -54,6 +54,10 @@ are starting points, the project's own from the start, and an update never touch
 own way. `dev.py` stays the template's: a project adds commands and install steps in its own
 `dev_project.py` (see `dev.py`'s docstring).
 
+The package and its tests are the project's own too: an update never changes the samples it
+started from, `src/<package_name>/` and `tests/test_cli.py`, nor writes one again once
+deleted.
+
 To bring an existing project under the template, run `copier copy` into its clone, keep
 what's the project's own in each conflict, and commit the result with the answers file.
 

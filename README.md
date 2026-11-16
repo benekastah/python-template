@@ -54,6 +54,17 @@ are starting points, the project's own from the start, and an update never touch
 own way. `dev.py` stays the template's: a project adds commands and install steps in its own
 `dev_project.py` (see `dev.py`'s docstring).
 
+The samples a project rewrites are its own too: an update never changes
+`src/<package_name>/cli.py`, `src/<package_name>/__init__.py` or `tests/test_cli.py`, nor
+writes one again once deleted.
+
+Everything else an update merges. In `pyproject.toml`, a project's dev dependencies go in
+`dev` (`uv add --dev`), apart from the template's in `template-dev`, and its additions to
+Ruff's `extend-select` and basedpyright's `include` go below their `# The project's own below:`
+line: an addition next to one of the template's lines conflicts when the template changes
+that line, e.g. to raise a version. A project made before `template-dev` existed that added to
+`dev` conflicts once on it: keep the template's lines, and move its own items into `dev`.
+
 To bring an existing project under the template, run `copier copy` into its clone, keep
 what's the project's own in each conflict, and commit the result with the answers file.
 
@@ -62,7 +73,9 @@ what's the project's own in each conflict, and commit the result with the answer
 `template/` is what Copier renders; files ending in `.jinja` are filled in with the
 answers, the rest are copied as they are. The questions are in `copier.yml`. CI
 (`.github/workflows/template.yml`) makes a project from the template and runs its
-`dev.py check` on Linux, macOS and Windows. To try a change by hand:
+`dev.py check` on Linux, macOS and Windows. Its `update` job updates a project to a later
+template commit, checking that the update merges without conflicts and leaves the samples
+alone. To try a change by hand:
 
 ```sh
 uvx copier copy --defaults --vcs-ref HEAD -d project_name=sample-tool \
@@ -72,3 +85,10 @@ cd /tmp/sample-tool && git init && python3 dev.py check
 ```
 
 `--vcs-ref HEAD` renders the last commit; Copier ignores uncommitted changes.
+
+What `_exclude` in `copier.yml` lists, an update leaves alone: a change to those files reaches
+new projects only, so keep it to samples a project rewrites, and put what existing projects
+need elsewhere.
+
+Never change `pyproject.toml.jinja`'s `dev = [...]` line or its `# The project's own below:`
+lines: projects add to and below them, so a change conflicts in each one.

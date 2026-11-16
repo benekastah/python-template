@@ -49,3 +49,56 @@ jobs:
           git init -q
           uv lock
           uv run --no-project python dev.py check
+
+  # `copier update` in a project that has made the samples its own and added to pyproject.toml's
+  # lists, to a later template commit that changes the samples, dev.py and the lists: it must
+  # merge without conflicts and leave the samples alone (see `_exclude` in copier.yml).
+  update:
+    name: copier update
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0  # Copier renders a commit, and reads the tags
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          enable-cache: false
+      - name: Update a project
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GIT_AUTHOR_NAME=ci GIT_AUTHOR_EMAIL=ci@example.com
+          export GIT_COMMITTER_NAME=ci GIT_COMMITTER_EMAIL=ci@example.com
+          template=$RUNNER_TEMP/template project=$RUNNER_TEMP/sample-tool
+          git clone -q . "$template"  # a copy to commit the later change to
+          uvx copier@9.19.1 copy --quiet --defaults --vcs-ref HEAD -d project_name=sample-tool \
+            -d "description=A sample tool." -d "author_name=Sample Author" \
+            -d author_email=sample@example.com "$template" "$project"
+          cd "$project"
+          git init -q && git add -A && git commit -qm copy
+          # The project's own changes.
+          echo '"""The real CLI."""' > src/sample_tool/cli.py
+          echo '"""The real package."""' > src/sample_tool/__init__.py
+          echo '"""The real tests."""' > tests/test_cli.py
+          sed -i -e 's/^dev = \[{ include-group = "template-dev" }\]$/dev = [\n    { include-group = "template-dev" },\n    "tzdata",\n]/' \
+            -e 's/^    # The project.s own below:$/&\n    "OWN",/' pyproject.toml
+          test "$(grep -cE '^    "(tzdata|OWN)",$' pyproject.toml)" = 3
+          git commit -qam own
+          # A later template commit.
+          (cd "$template"
+            sed -i '1i # A later change' template/dev.py template/src/*/*.py.jinja template/tests/test_cli.py.jinja
+            sed -i -e 's/"ruff>=[^"]*"/"ruff>=99.0"/' -e 's/^    # The project.s own below:$/    "LATER",\n&/' \
+              template/pyproject.toml.jinja
+            git commit -qam later)
+          uvx copier@9.19.1 update --quiet --defaults --vcs-ref HEAD
+          git status --short
+          test -z "$(git diff --name-only --diff-filter=U)"
+          if git grep -nE '^(<<<<<<<|>>>>>>>) '; then exit 1; fi
+          test -z "$(git ls-files --others '*.rej')"
+          git diff --quiet HEAD -- src/sample_tool/cli.py src/sample_tool/__init__.py tests/test_cli.py
+          grep -q '^# A later change' dev.py
+          grep -q '^# A later change' src/sample_tool/__main__.py
+          grep -q '"ruff>=99.0"' pyproject.toml
+          test "$(grep -cE '^    "(tzdata|OWN|LATER)",$' pyproject.toml)" = 5

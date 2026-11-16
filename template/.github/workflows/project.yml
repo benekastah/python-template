@@ -10,20 +10,16 @@ name: project
 
 on:
   workflow_call:
-    # ci.yml passes each of these, so keep declaring them all, used or not.
     inputs:
-      code:
-        description: >-
-          Whether anything but docs changed. A job checking only code can skip otherwise, with
-          `if: inputs.code`.
-        type: boolean
-        required: true
-      min-python:
-        description: The oldest Python the project supports, e.g. "3.11"
-        type: string
-        required: true
-      newest-python:
-        description: The newest Python CI tests it on, e.g. "3.15"
+      # A JSON object; a job reads a key with `fromJSON(inputs.context).<key>`:
+      # - code: false when docs alone changed, so a job checking only code can skip with
+      #   `if: fromJSON(inputs.context).code`.
+      # - min_python and newest_python: the oldest Python the project supports and the newest
+      #   CI tests it on, e.g. "3.11" and "3.15".
+      # One input, so the template can add keys without breaking this file: passing an input
+      # a workflow doesn't declare is an error.
+      context:
+        description: What ci.yml knows of the run, as JSON (see above)
         type: string
         required: true
 
@@ -35,7 +31,7 @@ jobs:
   # project's first, e.g.:
   #
   #   build:
-  #     if: inputs.code
+  #     if: fromJSON(inputs.context).code
   #     runs-on: ubuntu-latest
   #     timeout-minutes: 5
   #     steps:
@@ -44,7 +40,7 @@ jobs:
   #           persist-credentials: false
   #       - uses: ./.github/actions/setup
   #         with:
-  #           python-version: ${{ inputs.min-python }}
+  #           python-version: ${{ fromJSON(inputs.context).min_python }}
   #       - run: uv build
   none:
     if: false

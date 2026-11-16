@@ -68,9 +68,10 @@ jobs. The rest stays the template's, so an update keeps it current:
 - `.github/workflows/ci.yml` and the action it sets up jobs with, `.github/actions/setup`:
   the static checks, the tests, coverage, the time limits, cancelling superseded runs, and
   `CI passed`, which waits for `project.yml`'s jobs too (`ci.yml` calls it), so they gate
-  merges like the rest. A job in `project.yml` gets `inputs.code` (false when docs alone
-  changed, to skip with `if: inputs.code`), `inputs.min-python` and `inputs.newest-python`;
-  it can't `needs` a job in `ci.yml`.
+  merges like the rest. A job in `project.yml` reads what `ci.yml` passes it from one JSON
+  input, `context`: `code` (false when docs alone changed, to skip with
+  `if: fromJSON(inputs.context).code`), `min_python` and `newest_python`. The template can
+  add keys to it without breaking a project. A job there can't `needs` a job in `ci.yml`.
 
 Copier merges the template's changes to these with the project's, so a Dependabot bump to an
 action in them can conflict with the template's: keep the newer version.
@@ -127,9 +128,9 @@ twice), but before committing the update:
 
 1. Look for what the project changed in it: `git log -p -- .github/workflows/check.yml`.
 2. Move the project's own jobs into `project.yml`, in place of its placeholder `none` job,
-   setting up with `./.github/actions/setup` after the checkout, and in a matrix using
-   `inputs.min-python` and `inputs.newest-python` for the Pythons. Where `CI passed` needed
-   them, it now waits for all of `project.yml`.
+   setting up with `./.github/actions/setup` after the checkout, and taking the Pythons
+   from `fromJSON(inputs.context)` (see `project.yml`). Where `CI passed` needed them, it
+   now waits for all of `project.yml`.
 3. Make any changes the project made to the template's jobs (a raised time limit, say) in
    `ci.yml`.
 4. Replace `check.yml` in what the project's README and `PROJECT_AGENTS.md` say about CI.

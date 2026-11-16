@@ -122,9 +122,9 @@ jobs:
         run: .venv/bin/coverage report --format=markdown --fail-under=0 >> "$GITHUB_STEP_SUMMARY"
 
   # The project's own jobs, in project.yml, from this same commit. It runs even when docs alone
-  # changed, and is told so in `code`, so a job there can check docs too. project.yml must
-  # declare each of these inputs (passing one it doesn't declare is an error), so a new one
-  # would break a project's CI until its project.yml declares it.
+  # changed, and is told so in `code`, so a job there can check docs too. All in one JSON
+  # input, whose keys project.yml lists: a key can be added without breaking a project, where
+  # an input project.yml doesn't declare would be an error.
   project:
     needs: changes
     uses: ./.github/workflows/project.yml
@@ -132,9 +132,9 @@ jobs:
       contents: read  # without this, a called workflow gets the repository's default permissions
     secrets: inherit  # project.yml is this repository's own code, like this file
     with:
-      code: ${{ needs.changes.outputs.code == 'true' }}
-{% endraw %}      min-python: "{{ min_python }}"
-      newest-python: "{{ newest_python }}"
+      context: >-
+        {"code": ${{ needs.changes.outputs.code == 'true' }},{% endraw %}
+        "min_python": "{{ min_python }}", "newest_python": "{{ newest_python }}"}
 {% raw %}
   # The one check a ruleset on main should require, so changing the jobs doesn't change what's
   # required. It runs even if a check failed (a skipped required check would count as

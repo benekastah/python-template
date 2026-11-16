@@ -4,7 +4,7 @@
 #
 #   - uses: ./.github/actions/setup
 #     with:
-#       python-version: ${{ inputs.min-python }}
+#       python-version: ${{ fromJSON(inputs.context).min_python }}
 name: Set up
 description: Install uv and a Python.
 

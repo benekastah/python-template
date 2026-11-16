@@ -61,9 +61,10 @@ Development section says how to set up a clone and run the checks.
   session and copy them for each test; and prefer one long-lived process (e.g.
   `git cat-file --batch`) over one per request.
 - **Each CI job has a time limit** (`timeout-minutes`), about 20% over how long it takes in
-  finished runs, rounded up to a whole minute. If a job runs into its limit, speed it up if
-  you can (the tests, or the code itself); only if you can't, raise the limit, saying why in
-  the commit.
+  finished runs, rounded up to a whole minute, and never over 5 minutes, so no job keeps a
+  run waiting long. If a job runs into its limit, speed it up if you can (the tests, or the
+  code itself); if you can't, raise the limit, up to 5, saying why in the commit; past that,
+  split the job.
 - **CI is the template's `ci.yml` and `cancel.yml`, and the project's `project.yml`.**
   `.github/workflows/ci.yml` is the template's (`copier update` keeps it current): the static
   checks, the tests, coverage, and the `CI passed` job a ruleset requires. The project's own

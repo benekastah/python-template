@@ -29,9 +29,9 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
-# Each job's time limit (timeout-minutes) is about 20% over how long it takes, so a hung job
-# fails soon. If a job runs into it, speed it up if you can, and only then raise the limit (see
-# AGENTS.md).
+# Each job's time limit (timeout-minutes) is about 20% over how long it takes, and at most 5
+# minutes, so a hung job fails soon and no job keeps a run waiting long. If a job runs into it,
+# speed it up, or split it (see AGENTS.md); raise the limit only while it stays within 5.
 jobs:
   # Whether anything but docs changed. A pull request touching only Markdown skips the checks
   # (CI passed still reports); main always runs them.
@@ -85,7 +85,7 @@ jobs:
   tests:
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    timeout-minutes: 10
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
@@ -109,7 +109,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

@@ -18,11 +18,11 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   every check before a push to `main`.
 - **GitHub Actions**: the static checks once, the tests on Linux, macOS and Windows with the
   oldest and newest Python supported, a coverage report in the job's summary (a check once
-  `fail_under` is set), per-job time limits, a docs-only skip, cancelling superseded runs
-  and a pull request's run once it merges or closes, and one `CI passed` job for a ruleset to
-  require. The jobs set up uv and Python with a composite action, `.github/actions/setup`.
-  `copier update` keeps all that current, while the project's own jobs go in
-  `.github/workflows/project.yml`, which `CI passed` waits for too.
+  `fail_under` is set), a time limit of at most 5 minutes on each job, a docs-only skip,
+  cancelling superseded runs and a pull request's run once it merges or closes, and one
+  `CI passed` job for a ruleset to require. The jobs set up uv and Python with a composite
+  action, `.github/actions/setup`. `copier update` keeps all that current, while the project's
+  own jobs go in `.github/workflows/project.yml`, which `CI passed` waits for too.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
 - **Agent instructions** in two files, which `CLAUDE.md` imports. `AGENTS.md` is the template's,

@@ -55,7 +55,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     name: ${{ matrix.os }}, Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 5  # at most, as in the projects' ci.yml
     strategy:
       fail-fast: false
       matrix:
@@ -155,8 +155,8 @@ jobs:
           sed -i -e 's/^dev = \[{ include-group = "template-dev" }\]$/dev = [\n    { include-group = "template-dev" },\n    "tzdata",\n]/' \
             -e 's/^    # The project.s own below:$/&\n    "OWN",/' pyproject.toml
           test "$(grep -cE '^    "(tzdata|OWN)",$' pyproject.toml)" = 3
-          sed -i 's/^    timeout-minutes: 5$/    timeout-minutes: 6/' .github/workflows/ci.yml
-          grep -q '^    timeout-minutes: 6$' .github/workflows/ci.yml
+          sed -i 's/^    timeout-minutes: 5$/    timeout-minutes: 4/' .github/workflows/ci.yml
+          grep -q '^    timeout-minutes: 4$' .github/workflows/ci.yml
           echo '# The project'"'"'s own jobs.' >> .github/workflows/project.yml
           git commit -qam own
           # A later template commit.
@@ -177,7 +177,7 @@ jobs:
             PROJECT_AGENTS.md docs/issues.md docs/roadmap.md .github/workflows/project.yml
           grep -q '^<!-- A later change -->' AGENTS.md
           grep -q '^# A later change' .github/workflows/ci.yml
-          grep -q '^    timeout-minutes: 6$' .github/workflows/ci.yml
+          grep -q '^    timeout-minutes: 4$' .github/workflows/ci.yml
           grep -q '^# A later change' dev.py
           grep -q '^# A later change' src/sample_tool/__main__.py
           grep -q '"ruff>=99.0"' pyproject.toml

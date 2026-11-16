@@ -11,6 +11,9 @@
 
 On Windows, run it with `py` (`py dev.py check`). The hooks in git_hooks/ call it.
 
+`static` runs every check even when one fails, and `check` runs the tests even when `static`
+fails, so one run reports every failure; the exit status is the first failure's.
+
 `tests` runs pytest with this file as a plugin (`-p dev`), which adds `--shard I/N`: it sorts
 the tests by node id and keeps every Nth from the Ith, so the N shards run each test exactly
 once between them, and as many tests each, give or take one. CI runs a system's tests in N
@@ -109,9 +112,14 @@ def tool(name: str) -> str:
 
 def run(*args: str) -> None:
     """Run a command; its failure ends this script with its exit code."""
-    result = subprocess.run(args, cwd=ROOT, check=False)
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+    code = run_code(*args)
+    if code != 0:
+        sys.exit(code)
+
+
+def run_code(*args: str) -> int:
+    """Run a command and return its exit code, for a caller that goes on after a failure."""
+    return subprocess.run(args, cwd=ROOT, check=False).returncode
 
 
 def venv() -> None:
@@ -151,19 +159,34 @@ def venv() -> None:
 
 
 def check(pytest_args: list[str]) -> None:
-    """Every check: `static`, then `tests`."""
-    static()
-    tests(pytest_args)
+    """Every check: `static`, then `tests`, which runs even if `static` failed, so one run
+    reports everything; the exit status is the first failure's."""
+    venv()
+    static_code = _static()
+    tests_code = _tests(pytest_args)
+    if static_code or tests_code:
+        sys.exit(static_code or tests_code)
 
 
 def static() -> None:
     """The checks that don't depend on the system, so CI runs them once: Ruff's formatting
     (fix with `ruff format`) and linter (`ruff check --fix` fixes what it can), and
-    basedpyright in strict mode."""
+    basedpyright in strict mode. Runs all of them even if one fails, then exits with the first
+    failure's code, so one run reports every failure."""
     venv()
-    run(tool("ruff"), "format", "--check", "--quiet")
-    run(tool("ruff"), "check", "--quiet")
-    run(tool("basedpyright"))
+    code = _static()
+    if code:
+        sys.exit(code)
+
+
+def _static() -> int:
+    """`static`'s checks, in .venv, as the first failing one's exit code (0 if none failed)."""
+    codes = [
+        run_code(tool("ruff"), "format", "--check", "--quiet"),
+        run_code(tool("ruff"), "check", "--quiet"),
+        run_code(tool("basedpyright")),
+    ]
+    return next((code for code in codes if code), 0)
 
 
 def tests(pytest_args: list[str]) -> None:
@@ -172,7 +195,14 @@ def tests(pytest_args: list[str]) -> None:
     works because `run` starts it in this directory, and `python -m` puts the working directory
     on `sys.path`."""
     venv()
-    run(tool("python"), "-m", "pytest", "-p", "dev", *pytest_args)
+    code = _tests(pytest_args)
+    if code:
+        sys.exit(code)
+
+
+def _tests(pytest_args: list[str]) -> int:
+    """`tests`' pytest run, in .venv, as its exit code."""
+    return run_code(tool("python"), "-m", "pytest", "-p", "dev", *pytest_args)
 
 
 def shard(value: str) -> tuple[int, int]:

@@ -5,17 +5,22 @@ name: template
 on:
   push:
     branches: [main]
+  # closed too, only to cancel the pull request's run when it merges or closes, as the
+  # projects' ci.yml does (see there): this repository tries the same pattern on itself.
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 permissions:
   contents: read
 
+# A pull request's group is its number: a merged pull request's closed event has main's ref.
 concurrency:
-  group: template-${{ github.ref }}
+  group: template-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 jobs:
   sample:
+    if: github.event.action != 'closed'  # a closed run only cancels
     name: ${{ matrix.os }}, Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
@@ -82,6 +87,7 @@ jobs:
   # current, merge ci.yml, and leave the samples, PROJECT_AGENTS.md, docs/ and project.yml
   # alone (see `_exclude` and `_skip_if_exists` in copier.yml).
   update:
+    if: github.event.action != 'closed'
     name: copier update
     runs-on: ubuntu-latest
     timeout-minutes: 5

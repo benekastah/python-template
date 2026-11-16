@@ -13,14 +13,16 @@ dependencies = []
 {{ project_name }} = "{{ package_name }}.cli:main"
 
 [dependency-groups]
-dev = [
+# The template's dev tools, kept current by `copier update`; the project's own go in `dev`
+# (`uv add --dev`), so the two never conflict.
+template-dev = [
     "basedpyright>=1.40.2",
     "coverage>=7.17.3",
     "pytest>=9.2.0",
     "pytest-xdist>=3.8.0",
     "ruff>=0.17.5",
-    # The project's own go below, where the template's updates merge cleanly with them.
 ]
+dev = [{ include-group = "template-dev" }]
 
 [build-system]
 requires = ["hatchling>=1.33.0"]
@@ -47,7 +49,7 @@ extend-select = [
     "B",
     "C4",
     "SIM",
-    # The project's own go below, where the template's updates merge cleanly with them.
+    # The project's own below:
 ]
 
 [tool.basedpyright]
@@ -55,7 +57,7 @@ include = [
     "src",
     "tests",
     "dev.py",
-    # The project's own go below, where the template's updates merge cleanly with them.
+    # The project's own below:
 ]
 typeCheckingMode = "strict"
 pythonVersion = "{{ min_python }}"

@@ -46,7 +46,7 @@ Development section says how to set up a clone and run the checks.
 - **Before committing, run `python3 dev.py check`**: Ruff's formatter and linter, basedpyright
   in strict mode, then the tests. `python3 dev.py coverage` shows what the tests don't run.
 - **PRs are squash-merged**, so the checks must pass on a PR's last commit, and CI must pass
-  on it too: main's ruleset requires the "CI passed" check.
+  on it too (the "CI passed" check, which main's ruleset should require).
 - **Tests keep to themselves**: no network, and not the user's real config, home directory
   or other state; use `tmp_path`, and give programs the tests start a config that reaches
   nothing.
@@ -82,23 +82,37 @@ change:
 
 ## Reviewing
 
-Every PR is reviewed before it merges, drafts included, by a fresh agent with no context but
-the PR (not a fork of the session that wrote it), so it judges what the code says rather than
-what was meant.
+Every PR is reviewed by a fresh agent before it leaves draft: one with no context but the PR
+(not a fork of the session that wrote it), so it judges what the code says rather than what
+was meant. An agent says it's an agent wherever it writes as a person would: in the first line
+of a PR's description, a review, and each answer to a finding.
 
 - **The reviewer** reads the diff against the PR's base, its commit messages, this file and
-  `PROJECT_AGENTS.md`, and changes nothing. It looks for, most important first: bugs;
-  surprises, and what the change makes inconsistent outside itself; tests that are missing,
-  couldn't fail without the change, or pin down a wrong behavior; docs and comments that are
-  missing or untrue; dead code; readability; security. It checks each finding against the
-  code, and gives it a severity (bug, should-fix, minor), a failure scenario and a fix.
+  `PROJECT_AGENTS.md`, and changes nothing. It looks for, most important first:
+  - correctness: obviously correct is much better than just correct;
+  - surprises: anything surprising that's necessary has a comment and a test, only necessary
+    changes are accepted, and nothing outside the change is left inconsistent with it;
+  - tests: missing ones (new features fully covered), and low-value ones (would it fail if the
+    code were wrong in a meaningful way? is it no bigger than it needs to be?), or ones that
+    pin down a wrong behavior;
+  - docs, docstrings and comments that are missing or untrue, or that only describe a prior
+    state of the code or an idea that was rejected;
+  - dead code; readability; terseness;
+  - security: secure libraries, not a version of our own of what the right library does;
+  - fully qualified imports rather than relative ones;
+  - size (a large PR should be split, where it can be), risk, importance (does it move the
+    needle?) and cost.
+
+  It checks each finding against the code, and gives it a severity (bug, should-fix, minor),
+  a failure scenario and a fix.
 - **It posts one GitHub review of type COMMENT** (never approving or requesting changes),
-  saying in its first line that an AI agent wrote it, its findings numbered, each inline on
-  its line where it has one. The JSON goes in a temporary directory, not the repo:
+  its findings numbered, each inline on its line where it has one. The JSON goes in a
+  temporary directory, not the repo:
 
   ```sh
+  dir=$(mktemp -d)
   gh pr view N --json headRefOid -q .headRefOid   # the head GitHub has, not a local one
-  gh api repos/{owner}/{repo}/pulls/N/reviews --method POST --input "$TMP/review.json"
+  gh api repos/{owner}/{repo}/pulls/N/reviews --method POST --input "$dir/review.json"
   # {"commit_id": "<that sha>", "event": "COMMENT", "body": "...",
   #  "comments": [{"path": "src/...", "line": 42, "side": "RIGHT", "body": "1. bug: ..."}]}
   ```
@@ -106,7 +120,9 @@ what was meant.
   ones in their thread, the body's in one PR comment): fixed, with the commit's short hash,
   or why not (wrong, out of scope, or not worth its cost).
 - **Fixes are reviewed too**, the same way, on `<reviewed sha>..HEAD`, unless all they
-  change is wording.
+  change is wording. Fix and review again until a review finds no bugs or should-fixes.
+- **A PR merges** once every finding is answered, CI passes and the maintainer says go:
+  squashed, and stacked PRs in order, each safe to merge on its own.
 
 After a run of merges, several fresh agents review the whole code at once, each one part (a
 module, the tests, the tooling and CI, the docs against the code) at one commit of `main`,

@@ -55,11 +55,16 @@ jobs:
       - name: Lint the workflows
         if: runner.os == 'Linux' && matrix.python == '3.15'
         shell: bash
+        # Read-only and offline: actionlint only reads, and a fork's pull request is linted too.
+        # Each repository is linted even if one fails, so a run shows every error.
         run: |
+          git -C "$RUNNER_TEMP/sample-tool" init -q  # actionlint looks for the repository's root
           image=$(docker build -q .github/actionlint)
+          rc=0
           for repo in "$GITHUB_WORKSPACE" "$RUNNER_TEMP/sample-tool"; do
-            docker run --rm -v "$repo:/repo" -w /repo "$image"
+            docker run --rm --network none -v "$repo:/repo:ro" -w /repo "$image" || rc=1
           done
+          exit "$rc"
 
   # `copier update` in a project that has made the samples its own and added to pyproject.toml's
   # lists, to a later template commit that changes the samples, dev.py and the lists: it must

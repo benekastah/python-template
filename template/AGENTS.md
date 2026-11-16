@@ -65,10 +65,10 @@ Development section says how to set up a clone and run the checks.
   you can (the tests, or the code itself); only if you can't, raise the limit, saying why in
   the commit.
 - **CI is in two workflows.** `.github/workflows/ci.yml` is the template's (`copier update`
-  keeps it current): the static checks, the tests, and the `CI passed` job a ruleset
-  requires. The project's own jobs go in `.github/workflows/project.yml`, which `ci.yml` runs
-  and `CI passed` waits for; they can set up uv and Python with `.github/actions/setup`, also
-  the template's.
+  keeps it current): the static checks, the tests, coverage, and the `CI passed` job a
+  ruleset requires. The project's own jobs go in `.github/workflows/project.yml`, which
+  `ci.yml` runs and `CI passed` waits for; they can set up uv and Python with
+  `.github/actions/setup`, also the template's.
 
 ## Linux, macOS and Windows
 

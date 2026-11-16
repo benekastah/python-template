@@ -92,4 +92,5 @@ _message_after_update: |
   If this update deleted .github/workflows/check.yml (see `git status`), CI is now in
   ci.yml (the template's) and project.yml (this project's). Before committing, move any jobs
   the project added to check.yml (`git log -p -- .github/workflows/check.yml`) into
-  project.yml: see "Moving to ci.yml from check.yml" in python-template's README.
+  project.yml, as https://github.com/benekastah/python-template#moving-to-ciyml-from-checkyml
+  says.

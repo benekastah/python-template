@@ -109,6 +109,10 @@ jobs:
           for i in 1 2 3; do passed --shard "$i/3"; done | sort > "$RUNNER_TEMP/shards"
           test "$(grep -c . "$RUNNER_TEMP/all")" = 22
           diff "$RUNNER_TEMP/all" "$RUNNER_TEMP/shards"
+          # A shard past the last is a usage error (4), not a run of no tests.
+          rc=0
+          uv run --no-project python dev.py tests --shard 4/3 > /dev/null 2>&1 || rc=$?
+          test "$rc" = 4
       # actionlint, with shellcheck for the scripts, catches a workflow GitHub would reject or
       # misread (a bad key or expression, an input that isn't declared), which the checks above
       # never run. Once: the workflows are the same on every system.

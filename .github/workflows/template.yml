@@ -146,13 +146,15 @@ jobs:
         shell: bash
         working-directory: ${{ runner.temp }}/sample-tool
         run: |
-          printf 'x:int="a"\n' > src/sample_tool/bad.py
+          printf 'x: int = "a"\n' > src/sample_tool/bad_types.py
+          printf 'y:int=1\n' > src/sample_tool/bad_format.py
           rc=0
           uv run --no-project python dev.py static > "$RUNNER_TEMP/static.log" 2>&1 || rc=$?
-          rm src/sample_tool/bad.py
+          rm src/sample_tool/bad_types.py src/sample_tool/bad_format.py
           test "$rc" != 0
-          grep -q 'File would be reformatted' "$RUNNER_TEMP/static.log"
-          grep -q 'reportAssignmentType' "$RUNNER_TEMP/static.log"
+          # Each file is only wrong for one check, so its name shows that check ran.
+          grep -q 'bad_format.py' "$RUNNER_TEMP/static.log"
+          grep -q 'bad_types.py' "$RUNNER_TEMP/static.log"
       # `venv` says when it rewrites uv.lock, once. On Linux only, as the sync is the same
       # everywhere. $CI is unset: with it, `uv sync --locked` fails on a stale lock instead.
       - name: Check that venv reports a changed uv.lock
@@ -160,12 +162,15 @@ jobs:
         shell: bash
         working-directory: ${{ runner.temp }}/sample-tool
         run: |
+          cp pyproject.toml uv.lock "$RUNNER_TEMP"
           sed -i 's/^dependencies = \[\]$/dependencies = ["tzdata"]/' pyproject.toml
           grep -q '^dependencies = \["tzdata"\]$' pyproject.toml
           env -u CI uv run --no-project python dev.py venv 2> "$RUNNER_TEMP/venv1.log"
           test "$(grep -c 'uv.lock changed' "$RUNNER_TEMP/venv1.log")" = 1
           env -u CI uv run --no-project python dev.py venv 2> "$RUNNER_TEMP/venv2.log"
           test "$(grep -c 'uv.lock changed' "$RUNNER_TEMP/venv2.log")" = 0
+          # Back to the sample the later steps expect.
+          cp "$RUNNER_TEMP/pyproject.toml" "$RUNNER_TEMP/uv.lock" .
       # dev.py's --shard, as ci.yml runs it: the shards' tests, together, are the whole suite's,
       # each once, here too (pytest-xdist imports dev.py in each worker). More tests than the
       # sample's two, so each of the three shards gets several.

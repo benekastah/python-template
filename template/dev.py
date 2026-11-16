@@ -146,7 +146,8 @@ def venv() -> None:
         run("uv", "sync", "--quiet", *(["--locked"] if os.environ.get("CI") else []))
         after = lock.read_bytes() if lock.exists() else None
         if after != before:
-            print("dev: uv.lock changed; commit it with pyproject.toml", file=sys.stderr)
+            what = "created" if before is None else "changed"
+            print(f"dev: uv.lock {what}; commit it with pyproject.toml", file=sys.stderr)
     else:
         required = required_python(_pyproject_text())
         cfg = VENV / "pyvenv.cfg"

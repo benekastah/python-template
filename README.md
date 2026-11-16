@@ -17,8 +17,9 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
 - **Git hooks**: pre-commit formats and lint-fixes the staged Python files, pre-push runs
   every check before a push to `main`.
 - **GitHub Actions**: the static checks once, the tests on Linux, macOS and Windows with the
-  oldest and newest Python supported, per-job time limits, Spotlight off on the macOS
-  runners, a docs-only skip, and one `CI passed` job for a ruleset to require.
+  oldest and newest Python supported, a coverage report in the job's summary (a check once
+  `fail_under` is set), per-job time limits, Spotlight off on the macOS runners, a docs-only
+  skip, and one `CI passed` job for a ruleset to require.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
 - **A sample AGENTS.md** (with `CLAUDE.md` pointing to it): the shape of the code, the checks,

@@ -97,13 +97,33 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: uv run --no-project python dev.py tests
 
+  # What the tests run, once, on Linux with the newest Python: each file's lines and branches
+  # they don't, in the job's summary. A report rather than a check until pyproject.toml's
+  # [tool.coverage.report] sets fail_under, below which this job, and so CI, fails.
+  coverage:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+{% endraw %}          python-version: "{{ newest_python }}"
+{% raw %}      - run: uv run --no-project python dev.py coverage
+      - name: Put the coverage report in the job's summary
+        if: always()
+        run: .venv/bin/coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
   # The one check a ruleset on main should require, so changing the jobs doesn't change what's
   # required. It runs even if a check failed (a skipped required check would count as
   # passing), and fails unless every check passed, or docs alone changed.
   passed:
     name: CI passed
     if: always()
-    needs: [changes, static, tests]
+    needs: [changes, static, tests, coverage]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
@@ -113,8 +133,9 @@ jobs:
           CODE: ${{ needs.changes.outputs.code }}
           STATIC: ${{ needs.static.result }}
           TESTS: ${{ needs.tests.result }}
+          COVERAGE: ${{ needs.coverage.result }}
         run: |
           [ "$CHANGES" = success ] || exit 1
           [ "$CODE" = false ] && exit 0
-          [ "$STATIC" = success ] && [ "$TESTS" = success ]
+          [ "$STATIC" = success ] && [ "$TESTS" = success ] && [ "$COVERAGE" = success ]
 {% endraw %}

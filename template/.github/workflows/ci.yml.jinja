@@ -160,16 +160,31 @@ jobs:
     timeout-minutes: 2  # time for the force-cancel step's minute, below
     permissions:
       actions: write
+      pull-requests: read  # whether a fork's pull request has closed, below
     steps:
       # A cancelled run still runs this job, because of always(). Cancelling it too, which only
       # force-cancel can, marks it cancelled rather than failed, which blocks a merge just the
-      # same. (A fork's pull request can't, so there it fails.) The next step doesn't run in a
-      # cancelled run, so if the force-cancel hasn't stopped this job within a minute, fail.
+      # same. The next step doesn't run in a cancelled run, so if the force-cancel hasn't
+      # stopped this job within a minute, fail.
+      #
+      # A fork's pull request has a read-only token, which can't force-cancel. There, this job
+      # passes if the pull request has closed (its closed run cancelled this one, and nothing is
+      # left to block), so a merged fork's pull request isn't left red, and fails at once
+      # otherwise. Not head.repo.fork: that's also true of a branch in a repository that's
+      # itself a fork.
       - name: Cancel this job if the run was cancelled
         if: cancelled()
         env:
           GH_TOKEN: ${{ github.token }}
+          FORK: >-
+            ${{ github.event_name == 'pull_request' &&
+            github.event.pull_request.head.repo.full_name != github.repository }}
+          PR: ${{ github.event.pull_request.number }}
         run: |
+          if [ "$FORK" = true ]; then
+            test "$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .state)" = closed
+            exit 0
+          fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/force-cancel"
           sleep 60
           exit 1

@@ -157,7 +157,7 @@ the rest are copied as they are. The questions are in `copier.yml`. CI
 `dev.py check` with the oldest and newest Python, and checks there that
 `dev.py tests --shard I/N` runs each test in exactly one shard. That is on Linux, and on macOS
 and Windows too when a pull request changes `template/dev.py`, `template/git_hooks/`,
-`template/.gitattributes`, `template/.github/actions/` or `template.yml` (code that differs
+`template/pyproject.toml.jinja`, `template/.gitattributes`, `template/.github/actions/` or `template.yml` (code that differs
 per system), and on every push to `main`. It lints its workflows, and
 those of a project with shards, with [actionlint](https://github.com/rhysd/actionlint). Its
 `update` job updates a project to a later template commit, changing an answer as it does,

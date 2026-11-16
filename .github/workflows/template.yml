@@ -30,6 +30,8 @@ jobs:
   # on the platform or run on all of them:
   #   - template/dev.py: WINDOWS, venv's Scripts and .exe, the PATH install.
   #   - template/git_hooks/: sh scripts that pick `py` on Windows.
+  #   - template/pyproject.toml.jinja: the tool pins (a version can lack a Windows or macOS wheel)
+  #     and the xdist and coverage settings, which only show once installed and run per system.
   #   - template/.gitattributes: keeps the hooks' line endings Unix-style on Windows.
   #   - template/.github/actions/: the setup action every project job runs on each system.
   #   - this file: a change to the matrix should be seen on the systems it builds.
@@ -56,7 +58,12 @@ jobs:
             exit 0
           fi
           # Its own line, so a failing diff fails the step rather than reading as no code.
-          files=$(git diff --name-only --no-renames HEAD^1 HEAD)
+          # If it fails, run everything rather than fail the step and skip every job.
+          files=$(git diff --name-only --no-renames HEAD^1 HEAD) || {
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "platform=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
           if printf '%s\n' "$files" | grep -vE '\.md$' | grep -q . ||
             printf '%s\n' "$files" | grep -q '^template/'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
@@ -64,7 +71,7 @@ jobs:
             echo "code=false" >> "$GITHUB_OUTPUT"
           fi
           if printf '%s\n' "$files" | grep -qE \
-            '^(template/(dev\.py|\.gitattributes|git_hooks/|\.github/actions/)|\.github/workflows/template\.yml)'; then
+            '^(template/(dev\.py|pyproject\.toml\.jinja|\.gitattributes|git_hooks/.*|\.github/actions/.*)|\.github/workflows/template\.yml)$'; then
             echo "platform=true" >> "$GITHUB_OUTPUT"
           else
             echo "platform=false" >> "$GITHUB_OUTPUT"

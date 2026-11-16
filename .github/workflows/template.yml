@@ -1,6 +1,7 @@
-# Makes a project from the template and runs its checks on Linux, macOS and Windows, with the
-# oldest and newest Python the template defaults to, and lints its workflows and this one
-# (skipped for a docs-only pull request).
+# Makes a project from the template and runs its checks with the oldest and newest Python the
+# template defaults to, and lints its workflows and this one. On Linux; on macOS and Windows
+# too when a pull request changes code that differs per system (and on main). All of it is
+# skipped for a docs-only pull request.
 name: template
 
 on:
@@ -22,11 +23,25 @@ jobs:
   # the repository's own Markdown skips the other jobs; template/ is what projects get, so a
   # Markdown file there counts as code. main always runs them. No ruleset requires a check
   # here, so skipped jobs need no gate.
+  #
+  # `platform` is whether a changed file behaves differently per system, so the sample must run
+  # on macOS and Windows too. A pull request that changes none of them gets Linux only, which
+  # is where a rendering, `copier update` or workflow change shows. It is the files that branch
+  # on the platform or run on all of them:
+  #   - template/dev.py: WINDOWS, venv's Scripts and .exe, the PATH install.
+  #   - template/git_hooks/: sh scripts that pick `py` on Windows.
+  #   - template/pyproject.toml.jinja: the tool pins (a version can lack a Windows or macOS wheel)
+  #     and the xdist and coverage settings, which only show once installed and run per system.
+  #   - template/.gitattributes: keeps the hooks' line endings Unix-style on Windows.
+  #   - template/.github/actions/: the setup action every project job runs on each system.
+  #   - this file: a change to the matrix should be seen on the systems it builds.
+  # main always runs them all.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 1
     outputs:
       code: ${{ steps.diff.outputs.code }}
+      platform: ${{ steps.diff.outputs.platform }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -39,15 +54,27 @@ jobs:
           set -eu
           if [ "$EVENT" != pull_request ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "platform=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Its own line, so a failing diff fails the step rather than reading as no code.
-          files=$(git diff --name-only --no-renames HEAD^1 HEAD)
+          # Its own line, so a failing diff is caught rather than reading as no files (which
+          # would skip everything): run everything instead.
+          files=$(git diff --name-only --no-renames HEAD^1 HEAD) || {
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "platform=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
           if printf '%s\n' "$files" | grep -vE '\.md$' | grep -q . ||
             printf '%s\n' "$files" | grep -q '^template/'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+          if printf '%s\n' "$files" | grep -qE \
+            '^(template/(dev\.py|pyproject\.toml\.jinja|\.gitattributes|git_hooks/.*|\.github/actions/.*)|\.github/workflows/template\.yml)$'; then
+            echo "platform=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "platform=false" >> "$GITHUB_OUTPUT"
           fi
 
   sample:
@@ -59,7 +86,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # macOS and Windows only where `changes` says the change can differ there: their runners
+        # are slower and costlier, and nothing else a pull request changes runs differently.
+        os: ${{ fromJSON(needs.changes.outputs.platform == 'true' && '["ubuntu-latest", "macos-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
         python: ["3.11", "3.15"]
         # The one job that lints the workflows. If the Pythons above change without this, it
         # adds a job of its own rather than linting nowhere.

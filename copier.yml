@@ -85,3 +85,11 @@ _message_after_copy: |
     python3 dev.py check     # formatting, lint, types, then the tests
 
   Then commit everything, uv.lock and .copier-answers.yml included.
+
+# Until projects made before ci.yml have all updated: the update that brings ci.yml in deletes
+# check.yml without a conflict, even where the project added its own jobs to it.
+_message_after_update: |
+  If this update deleted .github/workflows/check.yml (see `git status`), CI is now in
+  ci.yml (the template's) and project.yml (this project's). Before committing, move any jobs
+  the project added to check.yml (`git log -p -- .github/workflows/check.yml`) into
+  project.yml: see "Moving to ci.yml from check.yml" in python-template's README.

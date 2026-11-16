@@ -1,5 +1,6 @@
 # Makes a project from the template and runs its checks on Linux, macOS and Windows, with the
-# oldest and newest Python the template defaults to, and lints its workflows and this one.
+# oldest and newest Python the template defaults to, and lints its workflows and this one
+# (skipped for a docs-only pull request).
 name: template
 
 on:

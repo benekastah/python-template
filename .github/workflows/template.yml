@@ -136,7 +136,10 @@ jobs:
         working-directory: ${{ runner.temp }}/sample-tool
         run: |
           printf 'import os\n' > src/sample_tool/bad.py
-          ! sh git_hooks/pre-push < /dev/null
+          # Not `! sh ...`: bash -e ignores a negated command's status.
+          if sh git_hooks/pre-push < /dev/null; then
+            echo "The pre-push hook let a lint error through."; exit 1
+          fi
           rm src/sample_tool/bad.py
       # dev.py's --shard, as ci.yml runs it: the shards' tests, together, are the whole suite's,
       # each once, here too (pytest-xdist imports dev.py in each worker). More tests than the

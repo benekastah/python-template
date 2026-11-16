@@ -2,10 +2,10 @@
 _subdirectory: template
 _templates_suffix: .jinja
 _min_copier_version: "9.19"
-# Starting points, the project's own from the start: written once, then never touched by
-# `copier update`.
+# Starting points, the project's own from the start: written once, then never changed by
+# `copier update` (though it writes one again if it's gone).
 _skip_if_exists:
-  - AGENTS.md
+  - PROJECT_AGENTS.md
   - README.md
   - .github/workflows/check.yml
 

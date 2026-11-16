@@ -22,10 +22,12 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   ruleset to require.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
-- **A sample AGENTS.md** (with `CLAUDE.md` pointing to it): the shape of the code, the checks,
-  keeping tests fast, CI's time limits, and the rules for Linux, macOS and Windows, to grow
-  with the project. How to work (PRs, reviews, worktrees, git stack) is left to your global
-  agent instructions.
+- **Agent instructions** in two files, which `CLAUDE.md` imports. `AGENTS.md` is the template's,
+  shared by every project and kept current by updates: what a change needs (one kind per PR,
+  its tests and docs), the tooling, the checks, keeping tests fast, CI's time limits, the
+  rules for Linux, macOS and Windows, and how PRs are reviewed. `PROJECT_AGENTS.md` is the
+  project's own, a starting point to grow with it: the shape of the code and the project's
+  rules, which win where the two disagree.
 - A README, an MIT license, and a CLI with two tests, to fill in.
 
 ## Making a project
@@ -49,10 +51,12 @@ uvx copier update --defaults
 ```
 
 Copier merges them with the project's own changes, marking conflicts as git does. Three files
-are starting points, the project's own from the start, and an update never touches them:
-`AGENTS.md`, `README.md` and `.github/workflows/check.yml`, since each project's CI grows its
-own way. `dev.py` stays the template's: a project adds commands and install steps in its own
-`dev_project.py` (see `dev.py`'s docstring).
+are starting points, the project's own from the start, and an update never changes them once
+written (though it writes one again if it's gone):
+`PROJECT_AGENTS.md`, `README.md` and `.github/workflows/check.yml`, since each project's CI
+grows its own way. `dev.py`, `AGENTS.md` and `CLAUDE.md` stay the template's: a project adds
+commands and install steps in its own `dev_project.py` (see `dev.py`'s docstring), and its own
+rules for agents in `PROJECT_AGENTS.md`.
 
 The samples a project rewrites are its own too: an update never changes
 `src/<package_name>/cli.py`, `src/<package_name>/__init__.py` or `tests/test_cli.py`, nor
@@ -65,8 +69,35 @@ line: an addition next to one of the template's lines conflicts when the templat
 that line, e.g. to raise a version. A project made before `template-dev` existed that added to
 `dev` conflicts once on it: keep the template's lines, and move its own items into `dev`.
 
-To bring an existing project under the template, run `copier copy` into its clone, keep
-what's the project's own in each conflict, and commit the result with the answers file.
+To bring an existing project under the template, move its `AGENTS.md` to `PROJECT_AGENTS.md`
+(as in step 1 below), run `copier copy` into its clone, keep what's the project's own in each
+conflict, and commit the result with the answers file.
+
+### Moving a project's rules to PROJECT_AGENTS.md
+
+A project made before `AGENTS.md` was the template's has all its rules in `AGENTS.md`. An
+update replays the project deleting it, so the template's never arrives on its own. Move to the
+new layout once, before that update:
+
+1. `git mv AGENTS.md PROJECT_AGENTS.md`, and remove from it what the template's
+   [`AGENTS.md`](template/AGENTS.md) says, keeping the shape of the code, the project's own
+   rules, and where it differs from the template's. In the project's README (which an update
+   never changes) and its other docs, point to `PROJECT_AGENTS.md` where they mean the
+   project's rules, and say `AGENTS.md` is the template's, as a new project's README does.
+   Commit.
+2. `uvx copier update --defaults`. It keeps `PROJECT_AGENTS.md`, and `CLAUDE.md` now imports
+   both files.
+3. Render the template's `AGENTS.md` alone, at the commit and from the source the update
+   recorded, and commit it with the update. Later updates keep it current.
+
+   ```sh
+   tmp=$(mktemp -d)
+   uvx copier copy -q --defaults --data-file .copier-answers.yml \
+       --vcs-ref "$(sed -n "s/^_commit: //p" .copier-answers.yml | tr -d "'")" \
+       -x '*' -x '!AGENTS.md' \
+       "$(sed -n "s/^_src_path: //p" .copier-answers.yml | tr -d "'")" "$tmp"
+   cp "$tmp/AGENTS.md" AGENTS.md
+   ```
 
 ## Working on the template
 
@@ -75,8 +106,8 @@ answers, the rest are copied as they are. The questions are in `copier.yml`. CI
 (`.github/workflows/template.yml`) makes a project from the template and runs its
 `dev.py check` on Linux, macOS and Windows, and lints its workflows with
 [actionlint](https://github.com/rhysd/actionlint). Its `update` job updates a project to a
-later template commit, checking that the update merges without conflicts and leaves the
-samples alone. To try a change by hand:
+later template commit, checking that the update merges without conflicts, keeps `AGENTS.md`
+current, and leaves the samples and `PROJECT_AGENTS.md` alone. To try a change by hand:
 
 ```sh
 uvx copier copy --defaults --vcs-ref HEAD -d project_name=sample-tool \

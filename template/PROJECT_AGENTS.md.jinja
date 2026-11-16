@@ -1,0 +1,16 @@
+# {{ project_name }}'s own rules
+
+What's true of {{ project_name }} alone. `AGENTS.md` has the rules it shares with every project
+made from python-template; where the two disagree, this file wins. Keep this file current when
+the shape of the code or a rule here changes.
+
+## Shape of the code
+
+- `src/{{ package_name }}/cli.py`: the `{{ project_name }}` command's entry point.
+- `tests/`: the tests, run with pytest.
+
+Describe each module here as the code grows: what it's for, and what it mustn't do.
+
+## Rules for this project
+
+Decisions to keep, each with why.

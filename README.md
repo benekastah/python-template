@@ -58,6 +58,11 @@ The package and its tests are the project's own too: an update never changes the
 started from, `src/<package_name>/` and `tests/test_cli.py`, nor writes one again once
 deleted.
 
+Everything else an update merges. In `pyproject.toml`, add to the template's lists below
+their "The project's own go below" comment, by hand (`uv add` sorts its addition in): an
+addition next to one of the template's lines conflicts when the template changes that line,
+e.g. to raise a version.
+
 To bring an existing project under the template, run `copier copy` into its clone, keep
 what's the project's own in each conflict, and commit the result with the answers file.
 

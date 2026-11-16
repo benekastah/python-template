@@ -13,7 +13,14 @@ dependencies = []
 {{ project_name }} = "{{ package_name }}.cli:main"
 
 [dependency-groups]
-dev = ["basedpyright>=1.40.2", "coverage>=7.17.3", "pytest>=9.2.0", "pytest-xdist>=3.8.0", "ruff>=0.17.5"]
+dev = [
+    "basedpyright>=1.40.2",
+    "coverage>=7.17.3",
+    "pytest>=9.2.0",
+    "pytest-xdist>=3.8.0",
+    "ruff>=0.17.5",
+    # The project's own go below, where the template's updates merge cleanly with them.
+]
 
 [build-system]
 requires = ["hatchling>=1.33.0"]
@@ -34,10 +41,22 @@ target-version = "py{{ min_python | replace('.', '') }}"
 per-file-target-version = { "dev.py" = "py311" }
 
 [tool.ruff.lint]
-extend-select = ["I", "UP", "B", "C4", "SIM"]
+extend-select = [
+    "I",
+    "UP",
+    "B",
+    "C4",
+    "SIM",
+    # The project's own go below, where the template's updates merge cleanly with them.
+]
 
 [tool.basedpyright]
-include = ["src", "tests", "dev.py"]
+include = [
+    "src",
+    "tests",
+    "dev.py",
+    # The project's own go below, where the template's updates merge cleanly with them.
+]
 typeCheckingMode = "strict"
 pythonVersion = "{{ min_python }}"
 

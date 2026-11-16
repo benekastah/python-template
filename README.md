@@ -164,3 +164,8 @@ need elsewhere.
 
 Never change `pyproject.toml.jinja`'s `dev = [...]` line or its `# The project's own below:`
 lines: projects add to and below them, so a change conflicts in each one.
+
+Never rename or remove a key of the `context` that `ci.yml` passes `project.yml`, or change
+its type; only add keys. Nothing checks the keys a project's job reads: a missing one reads as
+null, so a job with `if: fromJSON(inputs.context).code` would skip without a word, and
+`CI passed` accepts a skipped `project.yml`.

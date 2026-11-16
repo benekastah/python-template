@@ -19,7 +19,8 @@ on:
       # - min_python and newest_python: the oldest Python the project supports and the newest
       #   CI tests it on, e.g. "3.11" and "3.15".
       # One input, so the template can add keys without breaking this file: passing an input
-      # a workflow doesn't declare is an error.
+      # a workflow doesn't declare is an error. Nothing checks a key's name, though: a
+      # misspelt one reads as null, so `if:` skips the job rather than failing it.
       context:
         description: What ci.yml knows of the run, as JSON (see above)
         type: string

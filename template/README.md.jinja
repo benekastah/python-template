@@ -58,8 +58,12 @@ CI (`.github/workflows/check.yml`) runs the static checks once, on Linux, and th
 Linux, macOS and Windows, with the oldest and newest Python {{ project_name }} supports, for
 every pull request and every push to `main`. It installs from `uv.lock` and fails if it's out
 of date. A coverage job puts the lines and branches the tests don't run in its summary; set
-`fail_under` in `[tool.coverage.report]` to make CI fail below a total. Dependabot proposes new versions of the dependencies and the workflow's actions
-weekly, each a week after its release.
+`fail_under` in `[tool.coverage.report]` to make CI fail below a total. Dependabot proposes new
+versions of the dependencies and the workflow's actions weekly, each a week after its release.
+
+Coverage runs only on Linux, so code that only runs on macOS or Windows counts as missed there.
+Once `fail_under` is set, mark such a branch `# pragma: no cover`, and give it a test that runs on
+its own system.
 
 ### Updating from the template
 

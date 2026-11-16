@@ -1,6 +1,6 @@
-{% raw %}# Runs the static checks (formatting, lint, types) once and the tests on Linux, macOS and
-# Windows, with the oldest and newest Python supported: once per pull request (on the merge
-# GitHub would make), and on whatever lands on main.
+{% raw %}# Runs the static checks (formatting, lint, types) once, the tests on Linux, macOS and Windows
+# with the oldest and newest Python supported, and a coverage report once: once per pull request
+# (on the merge GitHub would make), and on whatever lands on main.
 name: check
 
 on:
@@ -111,11 +111,14 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
+          enable-cache: false
 {% endraw %}          python-version: "{{ newest_python }}"
 {% raw %}      - run: uv run --no-project python dev.py coverage
+      # Also when the tests failed or fell short of fail_under, unless there's nothing to report;
+      # the step above already failed for a shortfall, so this one doesn't again.
       - name: Put the coverage report in the job's summary
-        if: always()
-        run: .venv/bin/coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+        if: ${{ !cancelled() && hashFiles('.coverage') != '' }}
+        run: .venv/bin/coverage report --format=markdown --fail-under=0 >> "$GITHUB_STEP_SUMMARY"
 
   # The one check a ruleset on main should require, so changing the jobs doesn't change what's
   # required. It runs even if a check failed (a skipped required check would count as

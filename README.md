@@ -154,8 +154,11 @@ twice), but before committing the update:
 `template/` is what Copier renders; files ending in `.jinja` are filled in with the answers,
 the rest are copied as they are. The questions are in `copier.yml`. CI
 (`.github/workflows/template.yml`) makes a project from the template and runs its
-`dev.py check` on Linux, macOS and Windows, and checks there that
-`dev.py tests --shard I/N` runs each test in exactly one shard. It lints its workflows, and
+`dev.py check` with the oldest and newest Python, and checks there that
+`dev.py tests --shard I/N` runs each test in exactly one shard. That is on Linux, and on macOS
+and Windows too when a pull request changes `template/dev.py`, `template/git_hooks/`,
+`template/.gitattributes`, `template/.github/actions/` or `template.yml` (code that differs
+per system), and on every push to `main`. It lints its workflows, and
 those of a project with shards, with [actionlint](https://github.com/rhysd/actionlint). Its
 `update` job updates a project to a later template commit, changing an answer as it does,
 checking that the update merges without conflicts, keeps `AGENTS.md` and `ci.yml` current, and

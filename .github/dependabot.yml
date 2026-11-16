@@ -1,0 +1,17 @@
+# Weekly pull requests for new versions of what the template's own CI uses: the actions in
+# template.yml, and actionlint's image. A version waits a week after its release, as in the
+# projects' dependabot.yml. It doesn't read template/, whose pins are bumped by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+  - package-ecosystem: docker
+    directory: "/.github/actionlint"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

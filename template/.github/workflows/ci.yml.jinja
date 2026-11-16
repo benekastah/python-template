@@ -152,13 +152,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2  # time for the force-cancel step's minute, below
     permissions:
-      actions: write
+      actions: write  # force-cancel, below
+      checks: read  # the cancelled jobs' annotations, below
       pull-requests: read  # whether a fork's pull request merged into the default branch
     steps:
       # A cancelled run still runs this job, because of always(). Cancelling it too, which only
       # force-cancel can, marks it cancelled rather than failed, which blocks a merge just the
-      # same. The next step doesn't run in a cancelled run, so if the force-cancel hasn't
-      # stopped this job within a minute, fail.
+      # same. If the run was cancelled before this job started, cancelled() is false here, but
+      # a job's result is cancelled, so either one runs this step. A job that ran out of time
+      # is cancelled too, but that's a failure, which GitHub says only in the job's
+      # annotations: then this job fails. A run in which a job failed isn't cancelled here
+      # either: it ends red, since the commit really failed. If the force-cancel hasn't
+      # stopped this job within a minute, it fails.
       #
       # A fork's pull request has a read-only token, which can't force-cancel. There, this job
       # passes if the pull request merged into the default branch (cancel.yml cancelled this
@@ -168,7 +173,10 @@ jobs:
       # the same head opened against another protected branch. Not head.repo.fork: that's also
       # true of a branch in a repository that's itself a fork.
       - name: Cancel this job if the run was cancelled
-        if: cancelled()
+        id: cancel
+        if: >-
+          (cancelled() || contains(needs.*.result, 'cancelled')) &&
+          !contains(needs.*.result, 'failure')
         env:
           GH_TOKEN: ${{ github.token }}
           FORK: >-
@@ -176,6 +184,17 @@ jobs:
             github.event.pull_request.head.repo.full_name != github.repository }}
           PR: ${{ github.event.pull_request.number }}
         run: |
+          jobs=$(gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
+            --jq '.jobs[] | select(.conclusion == "cancelled") | .id')
+          for job in $jobs; do
+            messages=$(gh api --paginate "repos/$GITHUB_REPOSITORY/check-runs/$job/annotations" \
+              --jq '.[].message')
+            if grep -q 'exceeded the maximum execution time' <<<"$messages"; then
+              echo "A job ran out of time."
+              exit 1
+            fi
+          done
           if [ "$FORK" = true ]; then
             test "$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" \
               --jq '.merged and .base.ref == .base.repo.default_branch')" = true
@@ -185,8 +204,11 @@ jobs:
           sleep 60
           exit 1
       # project.yml's result is skipped when each of its jobs skipped itself (on a docs-only
-      # change, say); once changes succeeded, nothing else skips it.
+      # change, say); once changes succeeded, nothing else skips it. always(): without it, this
+      # step doesn't run in a cancelled run, so one in which a job failed would end green. Not
+      # after the step above passed, for a fork's merged pull request.
       - name: Fail unless every check passed
+        if: always() && steps.cancel.outcome != 'success'
         env:
           CHANGES: ${{ needs.changes.result }}
           CODE: ${{ needs.changes.outputs.code }}

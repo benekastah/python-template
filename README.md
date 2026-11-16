@@ -28,6 +28,8 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   rules for Linux, macOS and Windows, and how PRs are reviewed. `PROJECT_AGENTS.md` is the
   project's own, a starting point to grow with it: the shape of the code and the project's
   rules, which win where the two disagree.
+- **`docs/issues.md` and `docs/roadmap.md`**, each with a short header: what's wrong with
+  what's built, and what's left to build. `AGENTS.md` tells agents to keep them current.
 - A README, an MIT license, and a CLI with two tests, to fill in.
 
 ## Making a project
@@ -50,10 +52,11 @@ later changes:
 uvx copier update --defaults
 ```
 
-Copier merges them with the project's own changes, marking conflicts as git does. Three files
+Copier merges them with the project's own changes, marking conflicts as git does. Five files
 are starting points, the project's own from the start, and an update never changes them once
 written (though it writes one again if it's gone):
-`PROJECT_AGENTS.md`, `README.md` and `.github/workflows/check.yml`, since each project's CI
+`PROJECT_AGENTS.md`, `README.md`, `docs/issues.md`, `docs/roadmap.md` and
+`.github/workflows/check.yml`, since each project's CI
 grows its own way. `dev.py`, `AGENTS.md` and `CLAUDE.md` stay the template's: a project adds
 commands and install steps in its own `dev_project.py` (see `dev.py`'s docstring), and its own
 rules for agents in `PROJECT_AGENTS.md`.
@@ -107,7 +110,7 @@ answers, the rest are copied as they are. The questions are in `copier.yml`. CI
 `dev.py check` on Linux, macOS and Windows, and lints its workflows with
 [actionlint](https://github.com/rhysd/actionlint). Its `update` job updates a project to a
 later template commit, checking that the update merges without conflicts, keeps `AGENTS.md`
-current, and leaves the samples and `PROJECT_AGENTS.md` alone. To try a change by hand:
+current, and leaves the samples, `PROJECT_AGENTS.md` and `docs/` alone. To try a change by hand:
 
 ```sh
 uvx copier copy --defaults --vcs-ref HEAD -d project_name=sample-tool \

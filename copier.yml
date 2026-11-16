@@ -6,6 +6,8 @@ _min_copier_version: "9.19"
 # `copier update` (though it writes one again if it's gone).
 _skip_if_exists:
   - PROJECT_AGENTS.md
+  - docs/issues.md
+  - docs/roadmap.md
   - README.md
   - .github/workflows/check.yml
 

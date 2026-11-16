@@ -130,6 +130,14 @@ jobs:
             > tests/test_fails.py
           sh git_hooks/pre-push < /dev/null
           rm tests/test_fails.py
+      # ...and that it does run them: a lint error must stop the push.
+      - name: Check that the pre-push hook rejects a lint error
+        shell: bash
+        working-directory: ${{ runner.temp }}/sample-tool
+        run: |
+          printf 'import os\n' > src/sample_tool/bad.py
+          ! sh git_hooks/pre-push < /dev/null
+          rm src/sample_tool/bad.py
       # dev.py's --shard, as ci.yml runs it: the shards' tests, together, are the whole suite's,
       # each once, here too (pytest-xdist imports dev.py in each worker). More tests than the
       # sample's two, so each of the three shards gets several.

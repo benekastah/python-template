@@ -62,7 +62,8 @@ Everything else an update merges. In `pyproject.toml`, a project's dev dependenc
 `dev` (`uv add --dev`), apart from the template's in `template-dev`, and its additions to
 Ruff's `extend-select` and basedpyright's `include` go below their `# The project's own below:`
 line: an addition next to one of the template's lines conflicts when the template changes
-that line, e.g. to raise a version.
+that line, e.g. to raise a version. A project made before `template-dev` existed that added to
+`dev` conflicts once on it: keep the template's lines, and move its own items into `dev`.
 
 To bring an existing project under the template, run `copier copy` into its clone, keep
 what's the project's own in each conflict, and commit the result with the answers file.
@@ -87,7 +88,7 @@ cd /tmp/sample-tool && git init && python3 dev.py check
 
 What `_exclude` in `copier.yml` lists, an update leaves alone: a change to those files reaches
 new projects only, so keep it to samples a project rewrites, and put what existing projects
-need elsewhere (or in a release note).
+need elsewhere.
 
 Never change `pyproject.toml.jinja`'s `dev = [...]` line or its `# The project's own below:`
 lines: projects add to and below them, so a change conflicts in each one.

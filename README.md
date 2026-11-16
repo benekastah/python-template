@@ -72,7 +72,9 @@ what's the project's own in each conflict, and commit the result with the answer
 `template/` is what Copier renders; files ending in `.jinja` are filled in with the
 answers, the rest are copied as they are. The questions are in `copier.yml`. CI
 (`.github/workflows/template.yml`) makes a project from the template and runs its
-`dev.py check` on Linux, macOS and Windows. To try a change by hand:
+`dev.py check` on Linux, macOS and Windows. Its `update` job updates a project to a later
+template commit, checking that the update merges without conflicts and leaves the samples
+alone. To try a change by hand:
 
 ```sh
 uvx copier copy --defaults --vcs-ref HEAD -d project_name=sample-tool \

@@ -90,11 +90,12 @@ jobs. The rest stays the template's, so an update keeps it current:
 
 `ci.yml` runs on pull requests into `main` and on pushes to it, not on a pull request stacked
 on another one: that one is rebased and pushed again once the one below it merges, which
-would throw its run away, and runners (macOS ones especially) are scarce. (In one of GitHub's
-own stacks, such a pull request still starts a run, but its jobs all skip, and its `CI passed`
-is renamed `CI not run`, so it can't pass a ruleset. So merge such a stack one pull request
-at a time, from the bottom, each once its own run has passed: an upper one never gets
-`CI passed`, so merging it, and the stack under it, waits forever.) It runs once the
+would throw its run away, and runners (macOS ones especially) are scarce. In one of GitHub's
+own stacks, such a pull request still starts a run, but its jobs all skip, and the skipped
+`CI passed` job is shown by its name's expression as written, since GitHub doesn't evaluate
+a skipped job's name: never `CI passed`, so it can't pass a ruleset. So merge such a stack
+one pull request at a time, from the bottom, each once its own run has passed: an upper one
+never gets `CI passed`, so merging it, and the stack under it, waits forever. It runs once the
 pull request targets `main` and is pushed. A retarget to `main` with no push (GitHub's, when
 the branch below is deleted, or git stack's) is meant to start it too, but hasn't been seen
 to yet: if no run starts, push again, or close and reopen the pull request (re-running an

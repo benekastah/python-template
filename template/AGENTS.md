@@ -56,7 +56,7 @@ Development section says how to set up a clone and run the checks.
   on `main`, and a PR merges only once it passes. A stacked PR (into another PR's branch)
   gets no CI until it targets `main`, so these local checks are all it gets till then. In
   a GitHub stack, merge from the bottom, one PR at a time, each once its own CI has passed:
-  a PR above the bottom only ever gets "CI not run", so merging it waits forever.
+  a PR above the bottom never gets "CI passed", so merging it waits forever.
   `python3 dev.py coverage` shows what the tests don't run.
 - **PRs are squash-merged**, so the checks must pass on a PR's last commit, and CI must pass
   on it too (the "CI passed" check, which main's ruleset should require).

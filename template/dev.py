@@ -28,7 +28,7 @@ commands (a name to a function taking the command's arguments, a list of strings
 which Windows usually can't make, or a shim if the link ends in `.cmd`), and
 `after_install()`, which `install` runs last. It's held to the same rules as this file.
 
-`install` makes its links only if it may make all of them, changing nothing otherwise: it won't
+`install` makes its links only if it may make all of them, and changes nothing if not: it won't
 take one over from another clone (or install) whose target still exists, unless told to with
 `--replace`, and won't install a clone in the temporary directory at all, which would leave the
 user's commands broken once it's deleted. So `after_install()` makes no links of its own: links
@@ -309,6 +309,12 @@ def install(args: list[str]) -> None:
     if install_links is not None:
         links += install_links()
     refusals = [why for link, _ in links if (why := refusal(link, replace))]
+    if WINDOWS:  # e.g. from `uv tool install`, which Windows would run rather than the `.cmd`
+        refusals += [
+            f"{exe} is another install's, which Windows runs before {exe.stem}.cmd; uninstall it"
+            for exe in (bin_dir / f"{name}.exe" for name in names)
+            if exe.exists()
+        ]
     if refusals:
         sys.exit("\n".join(f"install: {why}" for why in refusals))
     venv()
@@ -329,17 +335,19 @@ def install(args: list[str]) -> None:
 
 
 def _temporary(names: list[str]) -> str | None:
-    """Why `install` won't install this clone, if it's in the temporary directory, or None:
-    whatever made it there will delete it, leaving the user's commands broken."""
-    temp = Path(tempfile.gettempdir()).resolve()
-    if not ROOT.is_relative_to(temp):
+    """Why `install` won't install this clone, if it's in the temporary directory (or, outside
+    Windows, /tmp or /var/tmp, which $TMPDIR may not be, e.g. on macOS), or None: whatever made
+    it there will delete it, leaving the user's commands broken."""
+    dirs = [tempfile.gettempdir(), *([] if WINDOWS else ["/tmp", "/var/tmp"])]
+    temp = next((d for d in map(Path.resolve, map(Path, dirs)) if ROOT.is_relative_to(d)), None)
+    if temp is None:
         return None
     run_one = f", e.g. {tool(names[0])}" if names else ""
     return (
-        f"install: {ROOT} is in the temporary directory ({temp}), so it isn't installed:"
+        f"install: {ROOT} is in a temporary directory ({temp}), so it isn't installed:"
         f" it would take your commands over, then leave them broken once it's deleted. To use"
-        f" this clone without installing it, run `python dev.py venv`, then its commands in"
-        f" {BIN}{run_one}."
+        f" this clone without installing it, run `python dev.py venv` (and, for its hooks,"
+        f" `git config core.hooksPath git_hooks`), then its commands in {BIN}{run_one}."
     )
 
 

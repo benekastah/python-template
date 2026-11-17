@@ -265,9 +265,33 @@ jobs:
           rm -rf "$other"
           install
           mine
-          # A temporary clone is never installed, even with --replace.
+          # A file install didn't write is left alone, even with --replace.
+          link=$bin/sample-tool
+          if [ "$RUNNER_OS" = Windows ]; then link=$bin/sample-tool.cmd; fi
+          rm "$link"
+          echo 'echo mine' > "$link"
+          refused --replace
+          test "$(cat "$link")" = 'echo mine'
+          rm "$link"
+          # Nor does it write a shim that another install's .exe, which Windows runs first, hides.
+          if [ "$RUNNER_OS" = Windows ]; then
+            touch "$bin/sample-tool.exe"
+            refused --replace
+            test ! -e "$bin/sample-tool.cmd"
+            rm "$bin/sample-tool.exe"
+          fi
+          # A temporary clone is never installed, even with --replace: in the temporary directory,
+          # or in /tmp, where macOS' temporary directory isn't.
           TMPDIR=$RUNNER_TEMP refused --replace
           grep -q 'dev.py venv' "$RUNNER_TEMP/install.log"
+          if [ "$RUNNER_OS" != Windows ]; then
+            scratch=$(mktemp -d /tmp/sample.XXXXXX)
+            mkdir "$scratch/sample-tool"
+            cp dev.py dev_project.py pyproject.toml "$scratch/sample-tool"  # all it reads to refuse
+            (cd "$scratch/sample-tool" && refused --replace)
+            grep -q 'temporary directory' "$RUNNER_TEMP/install.log"
+            rm -rf "$scratch"
+          fi
       # actionlint, with shellcheck for the scripts, catches a workflow GitHub would reject or
       # misread (a bad key or expression, an input that isn't declared), which the checks above
       # never run. Once: the workflows are the same on every system.

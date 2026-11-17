@@ -10,8 +10,9 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
 - **uv** for the virtualenv and a lockfile (`uv.lock`), with a pip fallback for a machine
   without uv. Builds with hatchling, from a `src/` layout.
 - **`dev.py`**, the same on every system, standard library only: `venv`, `check`, `static`,
-  `tests`, `coverage`, `install` (the package's commands on `PATH`, and the git hooks), and
-  what the hooks run.
+  `tests`, `coverage`, `install` (the package's commands on `PATH`, and the git hooks, never
+  taking a command over from another clone unasked, or installing a temporary one), and what
+  the hooks run.
 - **Ruff** for formatting and linting, and **basedpyright** in strict mode for types.
 - **pytest** with pytest-xdist (one worker per CPU), and coverage.py.
 - **Git hooks**: pre-commit formats and lint-fixes the staged Python files, pre-push runs

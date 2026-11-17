@@ -16,14 +16,17 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
 - **pytest** with pytest-xdist (one worker per CPU), and coverage.py.
 - **Git hooks**: pre-commit formats and lint-fixes the staged Python files, pre-push runs
   the static checks before every push.
-- **GitHub Actions**: the static checks once, the tests on Linux, macOS and Windows with the
-  oldest and newest Python supported (on a system where they're slow, split over several
-  jobs, as the project's answers say), a coverage report in the job's summary (a check once
-  `fail_under` is set), a time limit of at most 5 minutes on each job, a docs-only skip,
-  cancelling superseded runs and a pull request's run once it merges or closes, and one
-  `CI passed` job for a ruleset to require. The jobs set up uv and Python with a composite
-  action, `.github/actions/setup`. `copier update` keeps all that current, while the project's
-  own jobs go in `.github/workflows/project.yml`, which `CI passed` waits for too.
+- **GitHub Actions**, on pull requests into `main` and on `main`: the static checks once,
+  the tests on Linux, macOS and Windows with the oldest and newest Python supported (on a
+  system where they're slow, split over several jobs, as the project's answers say), a
+  coverage report in the job's summary (a check once `fail_under` is set), a time limit of at
+  most 5 minutes on each job, a docs-only skip, cancelling superseded runs and a pull
+  request's run once it merges or closes, and one `CI passed` job for a ruleset to require.
+  It is the only check a ruleset may require: editing a pull request's title or body reports
+  the other jobs as skipped, which counts as passing. The jobs set up uv and Python with a
+  composite action, `.github/actions/setup`. `copier update` keeps all that current, while
+  the project's own jobs go in `.github/workflows/project.yml`, which `CI passed` waits for
+  too.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
 - **Agent instructions** in two files, which `CLAUDE.md` imports. `AGENTS.md` is the template's,
@@ -84,6 +87,19 @@ jobs. The rest stays the template's, so an update keeps it current:
   its own.
 - `.github/workflows/cancel.yml`, which cancels a pull request's `ci.yml` run when it merges
   or closes.
+
+`ci.yml` runs on pull requests into `main` and on pushes to it, not on a pull request stacked
+on another one: that one is rebased and pushed again once the one below it merges, which
+would throw its run away, and runners (macOS ones especially) are scarce. (In one of GitHub's
+own stacks, such a pull request still starts a run, but its jobs all skip, and its `CI passed`
+is renamed `CI not run`, so it can't pass a ruleset. So merge such a stack one pull request
+at a time, from the bottom, each once its own run has passed: an upper one never gets
+`CI passed`, so merging it, and the stack under it, waits forever.) It runs once the
+pull request targets `main` and is pushed. A retarget to `main` with no push (GitHub's, when
+the branch below is deleted, or git stack's) is meant to start it too, but hasn't been seen
+to yet: if no run starts, push again, or close and reopen the pull request (re-running an
+earlier run won't do: it keeps the old base, and skips again). Until then, run
+`dev.py static` and the tests near the change locally.
 
 Copier merges the template's changes to these with the project's, so a Dependabot bump to an
 action in them can conflict with the template's: keep the newer version.
@@ -158,7 +174,9 @@ the rest are copied as they are. The questions are in `copier.yml`. CI
 `dev.py tests --shard I/N` runs each test in exactly one shard. That is on Linux, and on macOS
 and Windows too when a pull request changes `template/dev.py`, `template/git_hooks/`,
 `template/pyproject.toml.jinja`, `template/.gitattributes`, `template/.github/actions/` or `template.yml` (code that differs
-per system), and on every push to `main`. It lints its workflows, and
+per system), and on every push to `main`. Like a project's `ci.yml`, it runs only for a
+pull request into `main`: a stacked one gets CI once it targets `main`, so run the sample's
+checks by hand (below) until then. It lints its workflows, and
 those of a project with shards, with [actionlint](https://github.com/rhysd/actionlint). Its
 `update` job updates a project to a later template commit, changing an answer as it does,
 checking that the update merges without conflicts, keeps `AGENTS.md` and `ci.yml` current, and

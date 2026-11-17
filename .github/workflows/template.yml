@@ -1,21 +1,32 @@
 # Makes a project from the template and runs its checks with the oldest and newest Python the
 # template defaults to, and lints its workflows and this one. On Linux; on macOS and Windows
 # too when a pull request changes code that differs per system (and on main). All of it is
-# skipped for a docs-only pull request.
+# skipped for a docs-only pull request. Like the projects' ci.yml, only for a pull request into
+# main: a stacked one runs no job until it targets main.
 name: template
 
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+    # `edited` for a pull request retargeted to main without a push, as in ci.yml.
+    types: [opened, synchronize, reopened, edited]
+# As in ci.yml, the jobs also check the pull request's own base: in a GitHub stack, every pull
+# request's workflows trigger as if it targeted main.
 
 permissions:
   contents: read
 
 # A pull request's group is its number, the group cancel.yml's run joins when the pull request
-# merges or closes, to cancel this run: keep the two names the same.
+# merges or closes, to cancel this run: keep the two names the same. A run that checks nothing
+# (see `changes`) is in a group of its own, so a title edit, say, cancels no real run.
 concurrency:
-  group: template-${{ github.event.pull_request.number || github.ref }}
+  group: >-
+    ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
+    && (github.event.action != 'edited' || github.event.changes.base))
+    && format('template-{0}', github.event.pull_request.number || github.ref)
+    || format('template-skipped-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 jobs:
@@ -36,7 +47,14 @@ jobs:
   #   - template/.github/actions/: the setup action every project job runs on each system.
   #   - this file: a change to the matrix should be seen on the systems it builds.
   # main always runs them all.
+  #
+  # Skipped, and every job after it, for a pull request whose own base isn't main (one in a
+  # GitHub stack, above its bottom), and for an edit that leaves the base alone
+  # (`changes.base` is there only when the base changed).
   changes:
+    if: >-
+      (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
+      && (github.event.action != 'edited' || github.event.changes.base))
     runs-on: ubuntu-latest
     timeout-minutes: 1
     outputs:

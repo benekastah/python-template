@@ -16,8 +16,9 @@ on:
     branches: [main]
     # The default three, and `edited` for a pull request retargeted to main without a push
     # (by GitHub, when the branch below it is deleted, or by git stack, after it pushes): with
-    # no run, it would never get CI passed. A title or body edit runs nothing (see the
-    # concurrency group, `changes` and `passed`).
+    # no run, it would never get CI passed. A title or body edit runs no job (see the
+    # concurrency group, `changes` and `passed`), but reports each one as skipped, so the PR
+    # shows that rather than an earlier failure: the earlier run still has it.
     types: [opened, synchronize, reopened, edited]
 # The filter alone doesn't keep a stacked pull request out: in one of GitHub's own stacks,
 # every pull request's workflows trigger as if it targeted the stack's base (main). So the

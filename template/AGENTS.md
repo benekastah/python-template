@@ -11,9 +11,13 @@ Development section says how to set up a clone and run the checks.
 
 ## Making a change
 
-- **One kind of change per PR**: a refactor, a feature and a fix are separate PRs, each small
-  enough to review whole. When one needs another first, that one lands first, on its own,
-  with its own tests.
+- **One kind of change per PR**, small enough to review whole: a refactor, a feature and a
+  fix are separate PRs. When one needs another first, that one lands first. Except while
+  `PROJECT_AGENTS.md` says the project is in rapid development: then waiting on CI costs more
+  than a longer review, so bundle related changes (a fix, the refactor it needs, a small
+  feature) into PRs worth a CI run, still splitting a bigger change into stacked PRs.
+- **One commit per change**, so a reviewer can go commit by commit: each with its own tests
+  and docs, and passing the checks on its own. A change another needs comes first.
 - **Every change to behavior comes with tests**, in the same commit, that would fail without
   it, and changes the tests that cover the old behavior. Tests say what's correct, not what
   the code happens to do: don't add a test that pins down a bug.

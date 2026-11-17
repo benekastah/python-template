@@ -19,6 +19,9 @@ on:
     # no run, it would never get CI passed. A title or body edit runs nothing (see the
     # concurrency group, `changes` and `passed`).
     types: [opened, synchronize, reopened, edited]
+# The filter alone doesn't keep a stacked pull request out: in one of GitHub's own stacks,
+# every pull request's workflows trigger as if it targeted the stack's base (main). So the
+# jobs also check the pull request's own base, and run only when it's main.
 
 permissions:
   contents: read
@@ -32,13 +35,14 @@ permissions:
 # job: project.yml's jobs are part of this run, so they're cancelled with it.
 #
 # A pull request's group is its number, the group cancel.yml's run joins when the pull request
-# merges or closes, to cancel this run: keep the two names the same. An edit that leaves the
-# base alone (a title or body) runs in a group of its own, so it cancels no real run.
+# merges or closes, to cancel this run: keep the two names the same. A run that checks nothing
+# (see `changes`) is in a group of its own, so a title edit, say, cancels no real run.
 concurrency:
   group: >-
-    ${{ github.event.action == 'edited' && !github.event.changes.base
-    && format('ci-edit-{0}', github.run_id)
-    || format('ci-{0}', github.event.pull_request.number || github.ref) }}
+    ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
+    && (github.event.action != 'edited' || github.event.changes.base))
+    && format('ci-{0}', github.event.pull_request.number || github.ref)
+    || format('ci-skipped-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 # Each job's time limit (timeout-minutes) is about 20% over how long it takes, and at most 5
@@ -46,10 +50,13 @@ concurrency:
 # speed it up, or split it (see AGENTS.md); raise the limit only while it stays within 5.
 jobs:
   # Whether anything but docs changed. A pull request touching only Markdown skips the checks
-  # (CI passed still reports); main always runs them. Skipped, and every job after it, for an
-  # edit that leaves the base alone: `changes.base` is there only when the base changed.
+  # (CI passed still reports); main always runs them. Skipped, and every job after it, for a
+  # pull request whose own base isn't main (one in a GitHub stack, above its bottom), and for
+  # an edit that leaves the base alone (`changes.base` is there only when the base changed).
   changes:
-    if: github.event.action != 'edited' || github.event.changes.base
+    if: >-
+      (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
+      && (github.event.action != 'edited' || github.event.changes.base))
     runs-on: ubuntu-latest
     timeout-minutes: 1
     outputs:
@@ -177,16 +184,20 @@ jobs:
   # The one check a ruleset on main should require, so changing the jobs doesn't change what's
   # required. It runs even if a check failed (a skipped required check would count as
   # passing), and fails unless project.yml's jobs passed and, unless docs alone changed, so
-  # did every other check. Skipped for an edit that leaves the base alone, under another name:
-  # a skipped check counts as passing, and the latest check of a name is the one that counts,
-  # so one named CI passed could stand in for the real run on the same commit. That edit run
-  # reports every other job as skipped, under its own name: so CI passed is the only check a
-  # ruleset may require.
+  # did every other check. Skipped when `changes` is, under another name: a skipped check
+  # counts as passing, and the latest check of a name is the one that counts, so one named CI
+  # passed could stand in for a real run on the same commit, or pass a stacked pull request
+  # (a ruleset judges one in a GitHub stack by the stack's base's rules). That run reports
+  # every other job as skipped, under its own name: so CI passed is the only check a ruleset
+  # may require.
   passed:
     name: >-
-      ${{ (github.event.action != 'edited' || github.event.changes.base) && 'CI passed'
-      || 'CI not run for an edit' }}
-    if: always() && (github.event.action != 'edited' || github.event.changes.base)
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
+      && (github.event.action != 'edited' || github.event.changes.base))
+      && 'CI passed' || 'CI not run' }}
+    if: >-
+      always() && (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
+      && (github.event.action != 'edited' || github.event.changes.base))
     needs: [changes, static, tests, coverage, project]
     runs-on: ubuntu-latest
     timeout-minutes: 2  # time for the force-cancel step's minute, below

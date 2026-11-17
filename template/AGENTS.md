@@ -28,9 +28,9 @@ Development section says how to set up a clone and run the checks.
 - **Keep `docs/roadmap.md` (what's left to build) and `docs/issues.md` (what's wrong with
   what's built) current**: a change removes what it finishes or fixes, and adds what it
   leaves wrong.
-- **No GitHub issues without the maintainer's approval**: don't open one or comment on one
-  unless they say so. What's wrong goes in `docs/issues.md`, and agents report to the agent
-  or person that started them, not on an issue.
+- **No GitHub issues without the maintainer's approval**: don't open or comment on one unless
+  the maintainer says so (PRs and their reviews are fine). What's wrong goes in
+  `docs/issues.md`.
 - **Commit messages say why**, not just what.
 - **No new runtime dependency** without a good reason: prefer the standard library.
 
@@ -174,5 +174,5 @@ of a PR's description, a review, and each answer to a finding.
 
 After a run of merges, several fresh agents review the whole code at once, each one part (a
 module, the tests, the tooling and CI, the docs against the code) at one commit of `main`,
-each reporting its findings to the agent that started them; the fixes are PRs as above, and
-what isn't fixed yet goes in `docs/issues.md`.
+each reporting its findings to the agent that started them, which records what isn't fixed
+yet in `docs/issues.md`; the fixes are PRs as above.

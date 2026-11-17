@@ -287,7 +287,7 @@ jobs:
           if [ "$RUNNER_OS" != Windows ]; then
             scratch=$(mktemp -d /tmp/sample.XXXXXX)
             mkdir "$scratch/sample-tool"
-            cp dev.py dev_project.py pyproject.toml "$scratch/sample-tool"  # all it reads to refuse
+            cp dev.py pyproject.toml "$scratch/sample-tool"  # all it reads to refuse
             (cd "$scratch/sample-tool" && refused --replace)
             grep -q 'temporary directory' "$RUNNER_TEMP/install.log"
             rm -rf "$scratch"

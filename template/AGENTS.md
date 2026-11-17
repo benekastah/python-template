@@ -49,9 +49,10 @@ Development section says how to set up a clone and run the checks.
   any links it makes in `install_links()`, so `install` checks them with its own.
 - `dev.py install` points the user's commands at this clone: run it only in the clone they
   use. It refuses to take a command over from another clone (unless given `--replace`), and
-  to install a clone in the temporary directory. In a worktree or a scratch clone, use
-  `dev.py venv` and the commands in `.venv` (a scratch clone also needs
-  `git config core.hooksPath git_hooks` for the hooks; a worktree shares its clone's).
+  to install a clone in a temporary directory (the system's, /tmp or /var/tmp). In a
+  worktree or a scratch clone, use `dev.py venv` and the commands in `.venv` (a scratch clone
+  also needs `git config core.hooksPath git_hooks` for the hooks; a worktree shares its
+  clone's).
 - `dev` is a reserved module name: `dev.py tests` loads `dev.py` into pytest as `dev`, which
   would hide a test helper of that name.
 - Dev tooling goes in `dev.py` or `dev_project.py`, not shell scripts; the git hooks are

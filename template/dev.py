@@ -30,9 +30,10 @@ which Windows usually can't make, or a shim if the link ends in `.cmd`), and
 
 `install` makes its links only if it may make all of them, and changes nothing if not: it won't
 take one over from another clone (or install) whose target still exists, unless told to with
-`--replace`, and won't install a clone in the temporary directory at all, which would leave the
-user's commands broken once it's deleted. So `after_install()` makes no links of its own: links
-go in `install_links()`, which `install` checks with its own.
+`--replace`, and won't install a clone in a temporary directory (the system's, /tmp or
+/var/tmp) at all, which would leave the user's commands broken once it's deleted. So
+`after_install()` makes no links of its own: links go in `install_links()`, which `install`
+checks with its own.
 
 Standard library only: it runs before .venv exists. It runs under any Python from 3.11 (the
 first with tomllib; ruff checks it as 3.11), whatever the package needs, so the hooks work
@@ -290,8 +291,10 @@ def install(args: list[str]) -> None:
     changes.
 
     Refuses, before changing anything, if a link it would make runs another clone's (or
-    install's) file that still exists, unless `--replace` says to take it over; or if any is
-    a file it didn't make. Refuses outright in a temporary clone (see `_temporary`)."""
+    install's) file that still exists, unless `--replace` says to take it over; if any is a
+    file it didn't make; or, on Windows, if ~/.local/bin has a command's `.exe` (e.g. from
+    `uv tool install`), which Windows would run instead of the `.cmd`. Refuses outright in a
+    temporary clone (see `_temporary`)."""
     parser = argparse.ArgumentParser(prog="dev.py install", description=install.__doc__)
     parser.add_argument(
         "--replace", action="store_true", help="take over links another clone or install has"
@@ -339,7 +342,8 @@ def _temporary(names: list[str]) -> str | None:
     Windows, /tmp or /var/tmp, which $TMPDIR may not be, e.g. on macOS), or None: whatever made
     it there will delete it, leaving the user's commands broken."""
     dirs = [tempfile.gettempdir(), *([] if WINDOWS else ["/tmp", "/var/tmp"])]
-    temp = next((d for d in map(Path.resolve, map(Path, dirs)) if ROOT.is_relative_to(d)), None)
+    temps = [Path(d).resolve() for d in dirs]
+    temp = next((d for d in temps if ROOT.is_relative_to(d)), None)
     if temp is None:
         return None
     run_one = f", e.g. {tool(names[0])}" if names else ""

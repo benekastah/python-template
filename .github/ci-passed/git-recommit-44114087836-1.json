@@ -1,0 +1,247 @@
+{
+  "jobs": [
+    {
+      "id": 134147244321,
+      "name": "changes",
+      "conclusion": "success",
+      "runner_name": "GitHub Actions 1000015894",
+      "steps": [
+        {
+          "name": "Set up job",
+          "started_at": "2026-11-17T15:25:08Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:09Z"
+        },
+        {
+          "name": "Run set -eu",
+          "started_at": "2026-11-17T15:25:10Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:10Z"
+        },
+        {
+          "name": "Complete job",
+          "started_at": "2026-11-17T15:25:10Z"
+        }
+      ]
+    },
+    {
+      "id": 134147323693,
+      "name": "macos-latest, Python 3.15",
+      "conclusion": "cancelled",
+      "runner_name": "",
+      "steps": []
+    },
+    {
+      "id": 134147323704,
+      "name": "ubuntu-latest, Python 3.15",
+      "conclusion": "success",
+      "runner_name": "GitHub Actions 1000015898",
+      "steps": [
+        {
+          "name": "Set up job",
+          "started_at": "2026-11-17T15:25:15Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:16Z"
+        },
+        {
+          "name": "Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:16Z"
+        },
+        {
+          "name": "Run uv run --no-project python dev.py tests --shard 1/1",
+          "started_at": "2026-11-17T15:25:18Z"
+        },
+        {
+          "name": "Post Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:36Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:36Z"
+        },
+        {
+          "name": "Complete job",
+          "started_at": "2026-11-17T15:25:36Z"
+        }
+      ]
+    },
+    {
+      "id": 134147323741,
+      "name": "coverage",
+      "conclusion": "success",
+      "runner_name": "GitHub Actions 1000015897",
+      "steps": [
+        {
+          "name": "Set up job",
+          "started_at": "2026-11-17T15:25:15Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:16Z"
+        },
+        {
+          "name": "Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:17Z"
+        },
+        {
+          "name": "Run uv run --no-project python dev.py coverage",
+          "started_at": "2026-11-17T15:25:18Z"
+        },
+        {
+          "name": "Put the coverage report in the job's summary",
+          "started_at": "2026-11-17T15:25:37Z"
+        },
+        {
+          "name": "Post Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:37Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:37Z"
+        },
+        {
+          "name": "Complete job",
+          "started_at": "2026-11-17T15:25:37Z"
+        }
+      ]
+    },
+    {
+      "id": 134147323863,
+      "name": "windows-latest, Python 3.15",
+      "conclusion": "success",
+      "runner_name": "GitHub Actions 1000015895",
+      "steps": [
+        {
+          "name": "Set up job",
+          "started_at": "2026-11-17T15:25:15Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:16Z"
+        },
+        {
+          "name": "Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:24Z"
+        },
+        {
+          "name": "Run uv run --no-project python dev.py tests --shard 1/1",
+          "started_at": "2026-11-17T15:25:26Z"
+        },
+        {
+          "name": "Post Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:26:59Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:27:00Z"
+        },
+        {
+          "name": "Complete job",
+          "started_at": "2026-11-17T15:27:01Z"
+        }
+      ]
+    },
+    {
+      "id": 134147323886,
+      "name": "project / Type-check as if on Windows",
+      "conclusion": "success",
+      "runner_name": "GitHub Actions 1000015896",
+      "steps": [
+        {
+          "name": "Set up job",
+          "started_at": "2026-11-17T15:25:16Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:19Z"
+        },
+        {
+          "name": "Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:24Z"
+        },
+        {
+          "name": "Run uv run --no-project python dev.py types-windows",
+          "started_at": "2026-11-17T15:25:25Z"
+        },
+        {
+          "name": "Post Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:32Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:32Z"
+        },
+        {
+          "name": "Complete job",
+          "started_at": "2026-11-17T15:25:32Z"
+        }
+      ]
+    },
+    {
+      "id": 134147324548,
+      "name": "static",
+      "conclusion": "success",
+      "runner_name": "GitHub Actions 1000015900",
+      "steps": [
+        {
+          "name": "Set up job",
+          "started_at": "2026-11-17T15:25:16Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:16Z"
+        },
+        {
+          "name": "Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:17Z"
+        },
+        {
+          "name": "Run uv run --no-project python dev.py static",
+          "started_at": "2026-11-17T15:25:19Z"
+        },
+        {
+          "name": "Post Run ./.github/actions/setup",
+          "started_at": "2026-11-17T15:25:24Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "started_at": "2026-11-17T15:25:25Z"
+        },
+        {
+          "name": "Complete job",
+          "started_at": "2026-11-17T15:25:25Z"
+        }
+      ]
+    },
+    {
+      "id": 134158553937,
+      "name": "CI passed",
+      "conclusion": "failure",
+      "runner_name": "GitHub Actions 1000015980",
+      "steps": [
+        {
+          "name": "Set up job",
+          "started_at": "2026-11-17T15:41:40Z"
+        },
+        {
+          "name": "Cancel this job if the run was cancelled",
+          "started_at": "2026-11-17T15:41:40Z"
+        },
+        {
+          "name": "Fail unless every check passed",
+          "started_at": "2026-11-17T15:41:40Z"
+        },
+        {
+          "name": "Complete job",
+          "started_at": "2026-11-17T15:41:40Z"
+        }
+      ]
+    }
+  ]
+}

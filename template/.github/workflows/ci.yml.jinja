@@ -305,7 +305,8 @@ jobs:
           # tests; the systems come from the tests job's `name`.
           [ "$EVENT" = pull_request ] || exit 1
           api=repos/$GITHUB_REPOSITORY
-          # Every job but this one, still running; whether each ran is a runner or a started step.
+          # Every job but this one, which is still running (`needs` lists all the others, so
+          # they have finished). A job ran if it got a runner or started a step.
           jobs=$(gh api --paginate "$api/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
             --jq '.jobs[] | select(.status == "completed") | [.id, .conclusion,
               (.runner_name // "") != "" or any(.steps[]?; .started_at), .name] | @tsv')

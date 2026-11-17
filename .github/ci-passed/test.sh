@@ -2,7 +2,8 @@
 # Tests the verdict of the projects' CI passed job (its "Fail unless every check passed" step)
 # against the jobs API's real answers, from runs whose macOS job never got a runner, and
 # variants of them. The step runs as GitHub runs it, with a fake `gh` that answers from those
-# files. Their CI passed job is as the step sees it: still running. Usage: test.sh RAPID_CI_YML STRICT_CI_YML, the ci.yml of a project rendered with
+# files. In them, the CI passed job is still running, as it is when the step runs.
+# Usage: test.sh RAPID_CI_YML STRICT_CI_YML, the ci.yml of a project rendered with
 # rapid_development true, then false. Needs bash, jq and yq (mikefarah's, as on GitHub's
 # runners).
 set -euo pipefail
@@ -91,6 +92,9 @@ shows '- macos-latest, Python 3.15 (1/2)' "$tmp/summary"
 # Windows too, alongside macOS.
 check pass rapid "$(variant "$recommit" '.name | startswith("windows-")' "$never_started")" "$not_acquired"
 shows '::warning title=Tests skipped::Never started, for want of a runner, so not run: macos-latest, Python 3.15; windows-latest, Python 3.15' "$tmp/out"
+# Beside a project.yml job that skipped itself.
+check pass rapid "$(variant "$recommit" '.name | startswith("project / ")' \
+  '.conclusion = "skipped" | .runner_name = "" | .steps = []')" "$not_acquired"
 # All tests passed: nothing to say.
 check pass rapid "$(variant "$recommit" '.name | startswith("macos-")' '.conclusion = "success"')" \
   "$tmp/none.json" TESTS=success

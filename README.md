@@ -22,8 +22,8 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   coverage report in the job's summary (a check once `fail_under` is set), a time limit of at
   most 5 minutes on each job, a docs-only skip, cancelling superseded runs and a pull
   request's run once it merges or closes, and one `CI passed` job for a ruleset to require.
-  It is the only check a ruleset may require: editing a pull request's title or body reports
-  the other jobs as skipped, which counts as passing. The jobs set up uv and Python with a
+  It is the only check a ruleset may require: the others can report as skipped (on a
+  docs-only change, or a pull request above a GitHub stack's bottom), which counts as passing. The jobs set up uv and Python with a
   composite action, `.github/actions/setup`. `copier update` keeps all that current, while
   the project's own jobs go in `.github/workflows/project.yml`, which `CI passed` waits for
   too.
@@ -96,10 +96,13 @@ own stacks, such a pull request still starts a run, but its jobs all skip, and t
 a skipped job's name: never `CI passed`, so it can't pass a ruleset. So merge such a stack
 one pull request at a time, from the bottom, each once its own run has passed: an upper one
 never gets `CI passed`, so merging it, and the stack under it, waits forever. It runs once the
-pull request targets `main` and is pushed. A retarget to `main` with no push (GitHub's, when
-the branch below is deleted, or git stack's) is meant to start it too, but hasn't been seen
-to yet: if no run starts, push again, or close and reopen the pull request (re-running an
-earlier run won't do: it keeps the old base, and skips again). Until then, run
+pull request targets `main` and is pushed: GitHub's stacks push the pull request rebased onto
+`main` when the one below merges, and git stack pushes once it has retargeted it. A retarget
+alone starts no run: GitHub's own, when the branch below is deleted outside a GitHub stack,
+one by hand, or git stack's when it has nothing new to push. Nor does editing a pull request,
+since a newer run of `ci.yml` on the same commit was seen to hide `CI passed` from the
+ruleset. Then push again, or close and reopen the pull request (re-running an earlier run
+won't do: it keeps the old base). Until then, run
 `dev.py static` and the tests near the change locally.
 
 Copier merges the template's changes to these with the project's, so a Dependabot bump to an

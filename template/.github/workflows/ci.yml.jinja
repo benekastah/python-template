@@ -14,12 +14,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    # The default three, and `edited` for a pull request retargeted to main without a push
-    # (by GitHub, when the branch below it is deleted, or by git stack, after it pushes): with
-    # no run, it would never get CI passed. A title or body edit runs no job (see the
-    # concurrency group, `changes` and `passed`), but reports each one as skipped, so the PR
-    # shows that rather than an earlier failure: the earlier run still has it.
-    types: [opened, synchronize, reopened, edited]
+    # Not `edited`, for a retarget to main without a push: a title or body edit would start a
+    # run too, and its check suite, the newest of this workflow on the head, would then hide
+    # CI passed from the ruleset until the next real run. A retarget comes with a push anyway
+    # from GitHub's stacks (which rebase the pull request onto main) and from git stack (which
+    # pushes once it has retargeted).
 # The filter alone doesn't keep a stacked pull request out: in one of GitHub's own stacks,
 # every pull request's workflows trigger as if it targeted the stack's base (main). So the
 # jobs also check the pull request's own base, and run only when it's main.
@@ -37,11 +36,10 @@ permissions:
 #
 # A pull request's group is its number, the group cancel.yml's run joins when the pull request
 # merges or closes, to cancel this run: keep the two names the same. A run that checks nothing
-# (see `changes`) is in a group of its own, so a title edit, say, cancels no real run.
+# (see `changes`) is in a group of its own, so it cancels no real run.
 concurrency:
   group: >-
-    ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
-    && (github.event.action != 'edited' || github.event.changes.base))
+    ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main')
     && format('ci-{0}', github.event.pull_request.number || github.ref)
     || format('ci-skipped-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.run_attempt == 1 }}
@@ -52,12 +50,10 @@ concurrency:
 jobs:
   # Whether anything but docs changed. A pull request touching only Markdown skips the checks
   # (CI passed still reports); main always runs them. Skipped, and every job after it, for a
-  # pull request whose own base isn't main (one in a GitHub stack, above its bottom), and for
-  # an edit that leaves the base alone (`changes.base` is there only when the base changed).
+  # pull request whose own base isn't main (one in a GitHub stack, above its bottom).
   changes:
     if: >-
-      (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
-      && (github.event.action != 'edited' || github.event.changes.base))
+      (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 1
     outputs:
@@ -192,16 +188,14 @@ jobs:
   # doesn't evaluate a skipped job's name, so the check shows this expression as written,
   # never CI passed (so its 'CI not run' is never shown: the expression only has to evaluate
   # to CI passed when the job runs, and differ from it as written). That run reports every
-  # other job as skipped, under its own name: so CI passed is the only check a ruleset may
-  # require.
+  # other job as skipped too, under its own name, and a docs-only change skips the checks:
+  # so CI passed is the only check a ruleset may require.
   passed:
     name: >-
-      ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
-      && (github.event.action != 'edited' || github.event.changes.base))
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main')
       && 'CI passed' || 'CI not run' }}
     if: >-
-      always() && (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'
-      && (github.event.action != 'edited' || github.event.changes.base))
+      always() && (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main')
     needs: [changes, static, tests, coverage, project]
     runs-on: ubuntu-latest
     timeout-minutes: 2  # time for the force-cancel step's minute, below

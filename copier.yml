@@ -111,10 +111,11 @@ _message_after_copy: |
 
     cd {{ _copier_conf.dst_path }}
     git init
-    python3 dev.py install   # .venv, uv.lock, `{{ project_name }}` on PATH, the git hooks
-    python3 dev.py check     # formatting, lint, types, then the tests
+    python3 dev.py man       # .venv, uv.lock, and man/{{ project_name }}.1 from README.md
+    python3 dev.py install   # `{{ project_name }}` and its man page installed, the git hooks
+    python3 dev.py check     # formatting, lint, types, the man page, then the tests
 
-  Then commit everything, uv.lock and .copier-answers.yml included.
+  Then commit everything, uv.lock, man/ and .copier-answers.yml included.
 
 # Until projects made before ci.yml have all updated: the update that brings ci.yml in deletes
 # check.yml without a conflict, even where the project added its own jobs to it.

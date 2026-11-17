@@ -3,6 +3,7 @@
     {
       "id": 134147341871,
       "name": "changes",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015901",
       "steps": [
@@ -31,6 +32,7 @@
     {
       "id": 134147445489,
       "name": "static",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015910",
       "steps": [
@@ -67,6 +69,7 @@
     {
       "id": 134147445623,
       "name": "windows-latest, Python 3.15 (1/5)",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015904",
       "steps": [
@@ -107,6 +110,7 @@
     {
       "id": 134147445696,
       "name": "windows-latest, Python 3.15 (2/5)",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015902",
       "steps": [
@@ -147,6 +151,7 @@
     {
       "id": 134147445704,
       "name": "windows-latest, Python 3.15 (5/5)",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015903",
       "steps": [
@@ -187,6 +192,7 @@
     {
       "id": 134147445719,
       "name": "coverage",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015909",
       "steps": [
@@ -227,6 +233,7 @@
     {
       "id": 134147445781,
       "name": "project / man-page",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015907",
       "steps": [
@@ -263,6 +270,7 @@
     {
       "id": 134147445783,
       "name": "macos-latest, Python 3.15 (1/2)",
+      "status": "completed",
       "conclusion": "cancelled",
       "runner_name": "",
       "steps": []
@@ -270,6 +278,7 @@
     {
       "id": 134147445800,
       "name": "windows-latest, Python 3.15 (3/5)",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015911",
       "steps": [
@@ -310,6 +319,7 @@
     {
       "id": 134147445852,
       "name": "ubuntu-latest, Python 3.15",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015906",
       "steps": [
@@ -350,6 +360,7 @@
     {
       "id": 134147445866,
       "name": "macos-latest, Python 3.15 (2/2)",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015961",
       "steps": [
@@ -390,6 +401,7 @@
     {
       "id": 134147445872,
       "name": "project / types-other-platforms",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015908",
       "steps": [
@@ -426,6 +438,7 @@
     {
       "id": 134147445905,
       "name": "windows-latest, Python 3.15 (4/5)",
+      "status": "completed",
       "conclusion": "success",
       "runner_name": "GitHub Actions 1000015912",
       "steps": [
@@ -466,24 +479,13 @@
     {
       "id": 134159975550,
       "name": "CI passed",
-      "conclusion": "failure",
+      "status": "in_progress",
+      "conclusion": null,
       "runner_name": "GitHub Actions 1000015982",
       "steps": [
         {
           "name": "Set up job",
           "started_at": "2026-11-17T15:43:45Z"
-        },
-        {
-          "name": "Cancel this job if the run was cancelled",
-          "started_at": "2026-11-17T15:43:45Z"
-        },
-        {
-          "name": "Fail unless every check passed",
-          "started_at": "2026-11-17T15:43:45Z"
-        },
-        {
-          "name": "Complete job",
-          "started_at": "2026-11-17T15:43:46Z"
         }
       ]
     }

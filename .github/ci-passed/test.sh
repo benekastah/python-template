@@ -2,7 +2,7 @@
 # Tests the verdict of the projects' CI passed job (its "Fail unless every check passed" step)
 # against the jobs API's real answers, from runs whose macOS job never got a runner, and
 # variants of them. The step runs as GitHub runs it, with a fake `gh` that answers from those
-# files. Usage: test.sh RAPID_CI_YML STRICT_CI_YML, the ci.yml of a project rendered with
+# files. Their CI passed job is as the step sees it: still running. Usage: test.sh RAPID_CI_YML STRICT_CI_YML, the ci.yml of a project rendered with
 # rapid_development true, then false. Needs bash, jq and yq (mikefarah's, as on GitHub's
 # runners).
 set -euo pipefail
@@ -46,8 +46,6 @@ not_acquired=$here/not-acquired-annotations.json
 echo '[]' > "$tmp/none.json"
 echo '[{"annotation_level": "failure", "message": "Canceling since a higher priority waiting request for ci-107 exists"}]' \
   > "$tmp/superseded.json"
-echo '[{"annotation_level": "failure", "message": "The job has exceeded the maximum execution time of 5m0s"}]' \
-  > "$tmp/timed-out.json"
 
 # Each job of $1 that matches the jq condition $2 changed by the jq update $3.
 variant() {
@@ -55,8 +53,8 @@ variant() {
   echo "$tmp/variant.json"
 }
 never_started='.conclusion = "cancelled" | .runner_name = "" | .steps = []'
-ran='.conclusion = "cancelled" | .runner_name = "GitHub Actions 1" |
-  .steps = [{"name": "Set up job", "started_at": "2026-11-17T15:25:15Z"}]'
+got_runner='.runner_name = "GitHub Actions 1"'
+started_step='.steps = [{"name": "Set up job", "started_at": "2026-11-17T15:25:15Z"}]'
 
 failures=0
 # check WANT SCRIPT JOBS ANNOTATIONS [NAME=VALUE...]: runs the step as GitHub would (bash -e),
@@ -105,8 +103,10 @@ fi
 # Not out of rapid development, nor on main.
 check fail strict "$recommit" "$not_acquired"
 check fail rapid "$recommit" "$not_acquired" EVENT=push
-# Not a job that ran and then timed out, nor one cancelled with its run before it started.
-check fail rapid "$(variant "$recommit" '.name | startswith("macos-")' "$ran")" "$tmp/timed-out.json"
+# Not a job that ran (got a runner, or started a step) and then timed out, nor one cancelled
+# with its run before it started.
+check fail rapid "$(variant "$recommit" '.name | startswith("macos-")' "$got_runner")" "$not_acquired"
+check fail rapid "$(variant "$recommit" '.name | startswith("macos-")' "$started_step")" "$not_acquired"
 check fail rapid "$recommit" "$tmp/superseded.json"
 check fail rapid "$recommit" "$tmp/none.json"
 # Not Linux, which must have run and passed: not a Linux job that never started, or failed, or
@@ -118,6 +118,11 @@ check fail rapid "$tmp/no-linux.json" "$not_acquired"
 # Not a macOS or Windows job that failed, beside one that never started.
 check fail rapid "$(variant "$stack" '.name == "macos-latest, Python 3.15 (2/2)"' '.conclusion = "failure"')" "$not_acquired"
 check fail rapid "$(variant "$stack" '.name | startswith("windows-")' '.conclusion = "failure"')" "$not_acquired"
+# Not a test job on another runner the project added, which failed.
+jq '.jobs += [{"id": 1, "name": "ubuntu-24.04-arm, Python 3.15", "status": "completed",
+  "conclusion": "failure", "runner_name": "GitHub Actions 2", "steps": []}]' "$recommit" \
+  > "$tmp/other-runner.json"
+check fail rapid "$tmp/other-runner.json" "$not_acquired"
 # Not the other checks, nor project.yml's jobs (whatever system they run on).
 check fail rapid "$recommit" "$not_acquired" STATIC=abandoned
 check fail rapid "$recommit" "$not_acquired" COVERAGE=failure

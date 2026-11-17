@@ -298,28 +298,27 @@ jobs:
           # started is skipped rather than failed: their runners can be unavailable for long
           # stretches (seen often on macOS), and that says nothing about the code. GitHub
           # cancels such a job once it has waited too long, leaving no runner, no step started,
-          # and an annotation saying it never got one (or ran out of time while waiting): all
-          # three must hold, so a job that ran and timed out, or one cancelled with its run,
-          # still fails. On main it still fails, so the gap shows there. Every other test job
-          # must have passed, Linux's included, so some system ran the tests; the names come
-          # from the tests job's `name`.
+          # and an annotation saying it was not acquired by a runner: all three must hold, so a
+          # job that ran and timed out, or one cancelled with its run, still fails. On main it
+          # still fails, so the gap shows there. Every other finished job must have passed or
+          # skipped itself, and a Linux test job must have passed, so some system ran the
+          # tests; the systems come from the tests job's `name`.
           [ "$EVENT" = pull_request ] || exit 1
           api=repos/$GITHUB_REPOSITORY
+          # Every job but this one, still running; whether each ran is a runner or a started step.
           jobs=$(gh api --paginate "$api/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
-            --jq '.jobs[] | select(.name | test("^(ubuntu|macos|windows)-latest, Python "))
-              | [.id, .conclusion, (.runner_name // "") != "" or any(.steps[]?; .started_at),
-                .name] | @tsv')
+            --jq '.jobs[] | select(.status == "completed") | [.id, .conclusion,
+              (.runner_name // "") != "" or any(.steps[]?; .started_at), .name] | @tsv')
           linux=false
           skipped=()
           while IFS=$'\t' read -r id conclusion ran name; do
             case $conclusion/$name in
               success/ubuntu-*) linux=true ;;
-              success/*) ;;
+              success/* | skipped/*) ;;
               cancelled/macos-* | cancelled/windows-*)
                 [ "$ran" = false ] || exit 1
                 messages=$(gh api --paginate "$api/check-runs/$id/annotations" --jq '.[].message')
-                grep -q -e 'was not acquired by Runner' -e 'exceeded the maximum execution time' \
-                  <<<"$messages" || exit 1
+                grep -q 'was not acquired by Runner' <<<"$messages" || exit 1
                 skipped+=("$name")
                 ;;
               *) exit 1 ;;

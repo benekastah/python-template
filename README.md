@@ -24,9 +24,9 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   request's run once it merges or closes, and one `CI passed` job for a ruleset to require.
   It is the only check a ruleset may require: the others can report as skipped (on a
   docs-only change, or a pull request above a GitHub stack's bottom), which counts as
-  passing. The jobs set up uv and Python with a composite action, `.github/actions/setup`. `copier update` keeps all that current, while
-  the project's own jobs go in `.github/workflows/project.yml`, which `CI passed` waits for
-  too.
+  passing. The jobs set up uv and Python with a composite action, `.github/actions/setup`.
+  `copier update` keeps all that current, while the project's own jobs go in
+  `.github/workflows/project.yml`, which `CI passed` waits for too.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
 - **Agent instructions** in two files, which `CLAUDE.md` imports. `AGENTS.md` is the template's,

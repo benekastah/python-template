@@ -177,8 +177,10 @@ jobs:
   # required. It runs even if a check failed (a skipped required check would count as
   # passing), and fails unless project.yml's jobs passed and, unless docs alone changed, so
   # did every other check. Skipped for an edit that leaves the base alone, under another name:
-  # a skipped check counts as passing, so one named CI passed could stand in for the real run
-  # on the same commit.
+  # a skipped check counts as passing, and the latest check of a name is the one that counts,
+  # so one named CI passed could stand in for the real run on the same commit. That edit run
+  # reports every other job as skipped, under its own name: so CI passed is the only check a
+  # ruleset may require.
   passed:
     name: >-
       ${{ (github.event.action != 'edited' || github.event.changes.base) && 'CI passed'

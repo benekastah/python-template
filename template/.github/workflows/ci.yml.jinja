@@ -15,8 +15,9 @@ on:
   pull_request:
     branches: [main]
     # The default three, and `edited` for a pull request retargeted to main without a push
-    # (after the one below it merges): with no run, it would never get CI passed. A title or
-    # body edit runs nothing (see the concurrency group, `changes` and `passed`).
+    # (by GitHub, when the branch below it is deleted, or by git stack, after it pushes): with
+    # no run, it would never get CI passed. A title or body edit runs nothing (see the
+    # concurrency group, `changes` and `passed`).
     types: [opened, synchronize, reopened, edited]
 
 permissions:

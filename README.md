@@ -16,17 +16,17 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
 - **pytest** with pytest-xdist (one worker per CPU), and coverage.py.
 - **Git hooks**: pre-commit formats and lint-fixes the staged Python files, pre-push runs
   the static checks before every push.
-- **GitHub Actions**, on pull requests into `main` and on `main` (a stacked pull request
-  gets CI once it targets `main`): the static checks once, the tests on Linux, macOS and
-  Windows with the oldest and newest Python supported (on a system where they're slow, split
-  over several jobs, as the project's answers say), a coverage report in the job's summary
-  (a check once `fail_under` is set), a time limit of at most 5 minutes on each job, a
-  docs-only skip, cancelling superseded runs and a pull request's run once it merges or
-  closes, and one `CI passed` job for a ruleset to require. It is the only check a ruleset
-  may require: editing a pull request's title or body reports the other jobs as skipped,
-  which counts as passing. The jobs set up uv and Python with a composite action,
-  `.github/actions/setup`. `copier update` keeps all that current, while the project's own
-  jobs go in `.github/workflows/project.yml`, which `CI passed` waits for too.
+- **GitHub Actions**, on pull requests into `main` and on `main`: the static checks once,
+  the tests on Linux, macOS and Windows with the oldest and newest Python supported (on a
+  system where they're slow, split over several jobs, as the project's answers say), a
+  coverage report in the job's summary (a check once `fail_under` is set), a time limit of at
+  most 5 minutes on each job, a docs-only skip, cancelling superseded runs and a pull
+  request's run once it merges or closes, and one `CI passed` job for a ruleset to require.
+  It is the only check a ruleset may require: editing a pull request's title or body reports
+  the other jobs as skipped, which counts as passing. The jobs set up uv and Python with a
+  composite action, `.github/actions/setup`. `copier update` keeps all that current, while
+  the project's own jobs go in `.github/workflows/project.yml`, which `CI passed` waits for
+  too.
 - **Dependabot** for the locked packages and the actions, weekly, each a week after its
   release.
 - **Agent instructions** in two files, which `CLAUDE.md` imports. `AGENTS.md` is the template's,
@@ -91,7 +91,9 @@ jobs. The rest stays the template's, so an update keeps it current:
 `ci.yml` runs on pull requests into `main` and on pushes to it, not on a pull request stacked
 on another one: that one is rebased and pushed again once the one below it merges, which
 would throw its run away, and runners (macOS ones especially) are scarce. It runs once the
-pull request targets `main`, even when it's retargeted without a push. Until then, run
+pull request targets `main` and is pushed. A retarget to `main` with no push (GitHub's, when
+the branch below is deleted, or git stack's) is meant to start it too, but hasn't been seen
+to yet: if no run starts, push again, or close and reopen the pull request. Until then, run
 `dev.py static` and the tests near the change locally.
 
 Copier merges the template's changes to these with the project's, so a Dependabot bump to an

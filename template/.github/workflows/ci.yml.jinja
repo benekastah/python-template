@@ -2,7 +2,7 @@
 # with the oldest and newest Python supported, a coverage report once, and the project's own
 # jobs (project.yml): on each pull request into main (on the merge GitHub would make), and on
 # whatever lands on main. A pull request into another branch (one stacked on another's) runs
-# no job until it targets main (see `on:`): it will be rebased and pushed again by then, which
+# no job until it targets main and is pushed (see `on:`): it will be rebased and pushed again by then, which
 # would throw that run away.
 #
 # This file is the template's: `copier update` keeps it current, and merges its changes with
@@ -15,10 +15,12 @@ on:
   pull_request:
     branches: [main]
     # Not `edited`, for a retarget to main without a push: a title or body edit would start a
-    # run too, and its check suite, the newest of this workflow on the head, would then hide
-    # CI passed from the ruleset until the next real run. A retarget comes with a push anyway
-    # from GitHub's stacks (which rebase the pull request onto main) and from git stack (which
-    # pushes once it has retargeted).
+    # run too, and that run (the newest of this workflow on the head) was seen to hide CI
+    # passed from the ruleset until the next real run; GitHub's docs don't say why. A retarget
+    # usually comes with a push: from GitHub's stacks (which rebase the pull request onto
+    # main) and from git stack (which pushes once it has retargeted). One that doesn't
+    # (GitHub's, when the branch below is deleted outside a GitHub stack, or one by hand)
+    # needs a push, or a close and reopen.
 # The filter alone doesn't keep a stacked pull request out: in one of GitHub's own stacks,
 # every pull request's workflows trigger as if it targeted the stack's base (main). So the
 # jobs also check the pull request's own base, and run only when it's main.

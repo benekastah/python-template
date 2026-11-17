@@ -102,9 +102,10 @@ Development section says how to set up a clone and run the checks.
   they can set up uv and Python with `.github/actions/setup`, also the template's.
   `.github/workflows/cancel.yml`, the template's too, cancels a pull request's `ci.yml` run
   when it merges or closes, so its concurrency group must stay the same as `ci.yml`'s. Both
-  run only for PRs into `main`. A retarget to `main` alone starts no `ci.yml` run (git stack
-  and GitHub's stacks push after one): if none started, push again, or close and reopen the
-  PR (re-running an earlier run keeps its old base).
+  run only for PRs into `main`. A retarget to `main` alone starts no `ci.yml` run: git stack
+  and GitHub's stacks push after one, but GitHub's own retarget when the branch below is
+  deleted (outside a GitHub stack) doesn't. If none started, push again, or close and reopen
+  the PR (re-running an earlier run keeps its old base).
 
 ## Linux, macOS and Windows
 

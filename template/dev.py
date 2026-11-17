@@ -28,8 +28,9 @@ output): NAME (the command, and pyproject.toml's description), SYNOPSIS if dev_p
 one, DESCRIPTION (the README's opening), then the README's `##` sections, but for Install,
 Installing and Development. `static` checks the pages are current, and the pre-commit hook
 makes them again from the staged README when a commit changes what they're made from, and
-stages them. `install` links them into ~/.local/share/man/man1 (not on Windows, which has no
-`man`). A package with no commands, a library, gets none.
+stages them (or, if the commit names its files, stops it, as it can't). `install` links them
+into ~/.local/share/man/man1 (not on Windows, which has no `man`). A package with no commands,
+a library, gets none.
 
 It comes from python-template, and `copier update` replaces it: a project adds to it in
 dev_project.py, its own file, if it has one. That can define `COMMANDS`, a dict of extra
@@ -454,12 +455,12 @@ def pages(readme: Path) -> dict[Path, bytes]:
 
 def man_description(description: str) -> str:
     """pyproject.toml's description as a man page's NAME line has it: without a final period,
-    and starting lowercase if its first word is a capitalized word, all letters ("Stacked
-    branches." is "stacked branches", "A tool" is "a tool"; "PRs", "I/O" and "X11" stay)."""
+    and starting lowercase unless its first word has a capital or a digit past its first letter
+    ("Stacked branches." is "stacked branches", "Command-line tool" is "command-line tool";
+    "PRs", "I/O" and "X11" stay)."""
     description = description.strip().removesuffix(".")
     word = description.split(" ", 1)[0]
-    rest = word[1:]
-    if word[:1].isupper() and (not rest or (rest.isalpha() and rest.islower())):
+    if word[:1].isupper() and not any(c.isupper() or c.isdigit() for c in word[1:]):
         return description[0].lower() + description[1:]
     return description
 
@@ -671,8 +672,8 @@ def _pre_commit_pages() -> None:
     if _temporary_index():
         sys.exit(
             "pre-commit: the man pages need making again, which a commit naming its files"
-            " can't stage: run `python3 dev.py man`, `git add` the pages and the files, then"
-            " commit without naming files"
+            " can't stage: run `dev.py man`, `git add` the pages and the files, then commit"
+            " without naming files"
         )
     _write_pages(made)
     _git("add", "--", *(_relative(page) for page in changed))

@@ -62,8 +62,9 @@ The man page, `man/{{ project_name }}.1`, is made from this README by `dev.py ma
 pandoc (from the `pypandoc_binary` dev dependency): its sections, but not Installing and
 Development. `dev_project.py` can change which sections it leaves out, and give it a SYNOPSIS
 (see `dev.py`'s docstring). The pre-commit hook makes it again when a commit changes the
-README, and adds it to the commit; `dev.py static` (so the pre-push hook, and CI) fails if
-it's out of date. Once installed,
+README, and adds it to the commit (or stops a commit that names its files, `git commit PATH`,
+which it can't add the page to: run `dev.py man` and `git add` it, then commit).
+`dev.py static` (so the pre-push hook, and CI) fails if it's out of date. Once installed,
 {%- if project_name.startswith('git-') %} `man {{ project_name }}` and
 `git {{ project_name[4:] }} --help` open it.
 {%- else %} `man {{ project_name }}` opens it.

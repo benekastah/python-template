@@ -132,9 +132,8 @@ check fail rapid "$recommit" "$not_acquired" STATIC=abandoned
 check fail rapid "$recommit" "$not_acquired" COVERAGE=failure
 check fail rapid "$(variant "$recommit" '.name | startswith("project / ")' "$never_started")" \
   "$not_acquired" PROJECT=abandoned
-# Docs alone changed: the tests didn't run, and needn't have.
-check pass rapid "$recommit" "$tmp/none.json" CODE=false TESTS=skipped STATIC=skipped COVERAGE=skipped
-# Docs alone changed, but the README did: static ran, for the man pages, and must have passed.
+# Docs alone changed: the tests didn't run, and needn't have. Nor did static, unless the README
+# changed: then it ran, for the man pages, and must have passed.
 for script in rapid strict; do
   check pass "$script" "$recommit" "$tmp/none.json" CODE=false TESTS=skipped STATIC=skipped COVERAGE=skipped
   check pass "$script" "$recommit" "$tmp/none.json" CODE=false TESTS=skipped STATIC=success COVERAGE=skipped

@@ -251,9 +251,9 @@ jobs:
           cp "$RUNNER_TEMP/README.md" README.md
           dev man
           dev man --check
-      # A NAME line keeps a description's first word if it's an acronym. A package with no
-      # commands, a library, has no page and nothing to check. Linux only, as above.
-      - name: Check the NAME line of an acronym, and that a library gets no page
+      # A NAME line lowercases a description's first word, unless it's an acronym. A package with
+      # no commands, a library, has no page and nothing to check. Linux only, as above.
+      - name: Check the NAME line's first word, and that a library gets no page
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         working-directory: ${{ runner.temp }}/sample-tool
@@ -264,6 +264,9 @@ jobs:
           sed -i 's/^description = .*/description = "PRs to review."/' pyproject.toml
           uv run --no-project python dev.py man
           grep -qx 'sample\\-tool \\- PRs to review' man/sample-tool.1
+          sed -i 's/^description = .*/description = "Command-line tool."/' pyproject.toml
+          uv run --no-project python dev.py man
+          grep -qx 'sample\\-tool \\- command\\-line tool' man/sample-tool.1
           rm -r man
           sed -i '/^\[project\.scripts\]$/,/^$/d' pyproject.toml
           if grep -q 'project\.scripts' pyproject.toml; then exit 1; fi

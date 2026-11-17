@@ -52,8 +52,9 @@ Development section says how to set up a clone and run the checks.
 
 - **Before committing, run `python3 dev.py static`** (Ruff's formatter and linter,
   basedpyright in strict mode; each runs even if another fails) **and the tests near your
-  change** (`python3 dev.py tests PATH`). CI runs the full suite, and a PR merges only once it
-  passes.
+  change** (`python3 dev.py tests PATH`). CI runs the full suite on each PR into `main` and
+  on `main`, and a PR merges only once it passes. A stacked PR (into another PR's branch)
+  gets no CI until it targets `main`, so these local checks are all it gets till then.
   `python3 dev.py coverage` shows what the tests don't run.
 - **PRs are squash-merged**, so the checks must pass on a PR's last commit, and CI must pass
   on it too (the "CI passed" check, which main's ruleset should require).
@@ -98,7 +99,8 @@ Development section says how to set up a clone and run the checks.
   jobs go in `.github/workflows/project.yml`, which `ci.yml` runs and `CI passed` waits for;
   they can set up uv and Python with `.github/actions/setup`, also the template's.
   `.github/workflows/cancel.yml`, the template's too, cancels a pull request's `ci.yml` run
-  when it merges or closes, so its concurrency group must stay the same as `ci.yml`'s.
+  when it merges or closes, so its concurrency group must stay the same as `ci.yml`'s. Both
+  run only for PRs into `main`; `ci.yml` also runs when a PR is retargeted to `main`.
 
 ## Linux, macOS and Windows
 

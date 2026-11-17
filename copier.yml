@@ -92,6 +92,15 @@ test_shards_windows:
   default: 1
   validator: "{% if not 1 <= test_shards_windows <= 8 %}From 1 to 8{% endif %}"
 
+# Early on, waiting on CI costs more than what it would catch: AGENTS.md bundles changes into
+# fewer PRs, and ci.yml's CI passed lets a pull request through when its macOS or Windows test
+# jobs never got a runner. Off once others depend on a release and most changes are fixes.
+# True by default, also for a project that predates the question.
+rapid_development:
+  type: bool
+  help: Is it in rapid development (bundled PRs, and CI passed without tests that never got a macOS or Windows runner)?
+  default: true
+
 copyright_year:
   type: str
   help: The year for the license

@@ -22,7 +22,9 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   system where they're slow, split over several jobs, as the project's answers say), a
   coverage report in the job's summary (a check once `fail_under` is set), a time limit of at
   most 5 minutes on each job, a docs-only skip, cancelling superseded runs and a pull
-  request's run once it merges or closes, and one `CI passed` job for a ruleset to require.
+  request's run once it merges or closes, and one `CI passed` job for a ruleset to require
+  (in rapid development, it lets a pull request through when its macOS or Windows test jobs
+  never got a runner, if Linux's passed, and names them in a warning).
   It is the only check a ruleset may require: the others can report as skipped (on a
   docs-only change, or a pull request above a GitHub stack's bottom), which counts as
   passing. The jobs set up uv and Python with a composite action, `.github/actions/setup`.
@@ -66,7 +68,10 @@ project's answers, and gives a question added since its default; `-d NAME=VALUE`
 answer. A project whose tests take too long for one CI job on a system splits them over several
 there, with `test_shards_linux`, `test_shards_macos` or `test_shards_windows` (each 1 by
 default, at most 8), e.g. `uvx copier update --defaults -d test_shards_windows=3`; its
-`AGENTS.md` says how to do that without taking in the template's other changes.
+`AGENTS.md` says how to do that without taking in the template's other changes. So does
+`rapid_development` (true by default, also for a project made before the question): once others
+depend on a release and most changes are fixes, set it to false, so agents split changes into
+smaller PRs and `CI passed` fails a pull request whose tests never got a runner too.
 
 Five files are starting points, the project's own from the start, and an update never changes
 them once written (though it writes one again if it's gone): `PROJECT_AGENTS.md`, `README.md`,

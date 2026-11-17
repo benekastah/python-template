@@ -166,7 +166,9 @@ the rest are copied as they are. The questions are in `copier.yml`. CI
 `dev.py tests --shard I/N` runs each test in exactly one shard. That is on Linux, and on macOS
 and Windows too when a pull request changes `template/dev.py`, `template/git_hooks/`,
 `template/pyproject.toml.jinja`, `template/.gitattributes`, `template/.github/actions/` or `template.yml` (code that differs
-per system), and on every push to `main`. It lints its workflows, and
+per system), and on every push to `main`. Like a project's `ci.yml`, it runs only for a
+pull request into `main`: a stacked one gets CI once it targets `main`, so run the sample's
+checks by hand (below) until then. It lints its workflows, and
 those of a project with shards, with [actionlint](https://github.com/rhysd/actionlint). Its
 `update` job updates a project to a later template commit, changing an answer as it does,
 checking that the update merges without conflicts, keeps `AGENTS.md` and `ci.yml` current, and

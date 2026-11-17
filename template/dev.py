@@ -418,7 +418,10 @@ def pages(readme: Path) -> dict[Path, bytes]:
     if not names:
         return {}
     venv()
-    pandoc = _output(tool("python"), "-c", "import pypandoc; print(pypandoc.get_pandoc_path())")
+    # -X utf8: the path as UTF-8, rather than in Windows' code page.
+    pandoc = _output(
+        tool("python"), "-X", "utf8", "-c", "import pypandoc; print(pypandoc.get_pandoc_path())"
+    )
     own = _project()
     synopses: dict[str, str] = getattr(own, "MAN_SYNOPSIS", {})
     skipped: set[str] = getattr(own, "MAN_SKIPPED_SECTIONS", MAN_SKIPPED_SECTIONS)
@@ -451,10 +454,12 @@ def pages(readme: Path) -> dict[Path, bytes]:
 
 def man_description(description: str) -> str:
     """pyproject.toml's description as a man page's NAME line has it: without a final period,
-    and starting lowercase unless its first word is an acronym ("Stacked branches." is
-    "stacked branches", "PRs to review" stays)."""
+    and starting lowercase if its first word is a capitalized word, all letters ("Stacked
+    branches." is "stacked branches", "A tool" is "a tool"; "PRs", "I/O" and "X11" stay)."""
     description = description.strip().removesuffix(".")
-    if description[:1].isupper() and not description[1:2].isupper():
+    word = description.split(" ", 1)[0]
+    rest = word[1:]
+    if word[:1].isupper() and (not rest or (rest.isalpha() and rest.islower())):
         return description[0].lower() + description[1:]
     return description
 
@@ -646,17 +651,50 @@ def pre_commit() -> None:
 def _pre_commit_pages() -> None:
     """Make the man pages again, from the staged README.md, if the commit changes one of
     `MAN_SOURCES`, and stage them, so they're current in the commit even if only part of the
-    README is staged. Stale pages that the staged files don't account for (a page no command
-    has) are left to `static`'s check."""
+    README is staged. Only the README is read from the index: the commands, the description
+    and dev_project.py's settings come from the working tree, so a partly staged
+    pyproject.toml or dev_project.py can leave the commit's pages stale, as can a page no
+    command has; `static`'s check catches both.
+
+    Stops the commit if a page changes and the commit names its files (`git commit PATH`):
+    git then runs the hook on an index of its own, and keeps the page staged there out of the
+    real one, which would be left staging the old page."""
     if not _git("diff", "--cached", "--name-only", "--", *MAN_SOURCES).strip():
         return
     with tempfile.TemporaryDirectory() as scratch:
         readme = Path(scratch) / "README.md"
         readme.write_bytes(_git("show", ":README.md"))
         made = pages(readme)
-    if made:
-        _write_pages(made)
-        _git("add", "--", *(_relative(page) for page in made))
+    changed = [page for page, text in made.items() if _staged(page) != text]
+    if not changed:
+        return
+    if _temporary_index():
+        sys.exit(
+            "pre-commit: the man pages need making again, which a commit naming its files"
+            " can't stage: run `python3 dev.py man`, `git add` the pages and the files, then"
+            " commit without naming files"
+        )
+    _write_pages(made)
+    _git("add", "--", *(_relative(page) for page in changed))
+
+
+def _staged(path: Path) -> bytes | None:
+    """The staged content of `path`, or None if it isn't staged."""
+    shown = subprocess.run(
+        ["git", "show", f":{_relative(path)}"], cwd=ROOT, capture_output=True, check=False
+    )
+    return shown.stdout if shown.returncode == 0 else None
+
+
+def _temporary_index() -> bool:
+    """Whether git runs this hook on a temporary index, as for `git commit PATH`, rather than
+    the repository's own (or its lock, which becomes it, as for `git commit -a`)."""
+    index = os.environ.get("GIT_INDEX_FILE")
+    if index is None:
+        return False
+    # The git directory's index: `--git-path index` would name $GIT_INDEX_FILE.
+    own = (Path(_git("rev-parse", "--absolute-git-dir").decode().strip()) / "index").resolve()
+    return (ROOT / index).resolve() not in (own, own.with_name(own.name + ".lock"))
 
 
 def _pre_commit_python() -> None:

@@ -185,12 +185,13 @@ jobs:
   # The one check a ruleset on main should require, so changing the jobs doesn't change what's
   # required. It runs even if a check failed (a skipped required check would count as
   # passing), and fails unless project.yml's jobs passed and, unless docs alone changed, so
-  # did every other check. Skipped when `changes` is, under another name: a skipped check
-  # counts as passing, and the latest check of a name is the one that counts, so one named CI
-  # passed could stand in for a real run on the same commit, or pass a stacked pull request
-  # (a ruleset judges one in a GitHub stack by the stack's base's rules). That run reports
-  # every other job as skipped, under its own name: so CI passed is the only check a ruleset
-  # may require.
+  # did every other check. Skipped when `changes` is, and then not named CI passed: a skipped
+  # check counts as passing, and the latest check of a name is the one that counts, so one
+  # named CI passed could stand in for a real run on the same commit, or pass a stacked pull
+  # request (a ruleset judges one in a GitHub stack by the stack's base's rules). GitHub
+  # doesn't evaluate a skipped job's name, so the check shows this expression as written,
+  # never CI passed. That run reports every other job as skipped, under its own name: so CI
+  # passed is the only check a ruleset may require.
   passed:
     name: >-
       ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'

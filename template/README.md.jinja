@@ -31,8 +31,9 @@ python3 dev.py install
 ```
 
 It sets up `.venv` with the package (editable) and the dev tools, puts `{{ project_name }}`
-on your `PATH` (a link in `~/.local/bin`, or on Windows a `.cmd` there), and makes the clone
-use the git hooks in `git_hooks/`. On Windows, run `dev.py` with `py` (`py dev.py install`).
+on your `PATH` (a link in `~/.local/bin`, or on Windows a `.cmd` there), links its man page
+into `~/.local/share/man/man1` (but on Windows), and makes the clone use the git hooks in
+`git_hooks/`. On Windows, run `dev.py` with `py` (`py dev.py install`).
 
 If `~/.local/bin` already has `{{ project_name }}` from another clone (or installed another
 way), it stops and says so, changing nothing: `dev.py install --replace` takes it over (except,
@@ -49,12 +50,29 @@ python3 dev.py check       # every check: static, then tests (even if static fai
 python3 dev.py static      # Ruff's formatter and linter, and basedpyright in strict mode
 python3 dev.py tests       # the tests, in parallel (arguments go to pytest, e.g. -k name)
 python3 dev.py coverage    # the tests under coverage.py, and the lines they don't run
+python3 dev.py man         # man/{{ project_name }}.1, the man page, from this README
 ```
 
 If the formatting check fails, `.venv/bin/ruff format` formats the code;
 `.venv/bin/ruff check --fix` fixes what it can of the linter's findings. The pre-commit hook
-does both for the files you commit, and the pre-push hook runs the static checks before every
-push. CI runs the tests.
+does both for the files you commit (and makes the man page again, below), and the pre-push
+hook runs the static checks before every push. CI runs the tests.
+
+The man page, `man/{{ project_name }}.1`, is made from this README by `dev.py man`, with
+pandoc (from the `pypandoc_binary` dev dependency): its sections, but not Installing and
+Development. `dev_project.py` can change which sections it leaves out, and give it a SYNOPSIS
+(see `dev.py`'s docstring). The pre-commit hook makes it again when a commit changes the
+README, and adds it to the commit; `dev.py static` (so the pre-push hook, and CI) fails if
+it's out of date. Once installed, {% if project_name.startswith('git-') -%}
+`man {{ project_name }}` and `git {{ project_name[4:] }} --help` open it
+{%- else -%}
+`man {{ project_name }}` opens it
+{%- endif %}. If `dev.py install` warns that `man`
+doesn't look in `~/.local/share/man`, add `export MANPATH="$HOME/.local/share/man:"` to your
+shell's startup file. Windows has no `man`: there,{% if project_name.startswith('git-') %}
+`git {{ project_name[4:] }} --help` opens Git for Windows' HTML help, which has no page for it, so
+use `{{ project_name }} --help` or `git {{ project_name[4:] }} -h`{% else %} use
+`{{ project_name }} --help`{% endif %}.
 
 Dependencies are locked in `uv.lock`. `dev.py` installs from it with uv, and updates it when
 `pyproject.toml`'s dependencies change, and says so when it does; commit both. Without uv,

@@ -126,13 +126,14 @@ jobs:
             -d "author_name=Sample Author" -d author_email=sample@example.com \
             . "$RUNNER_TEMP/sample-tool"
       # As someone would after making it: dev.py then installs from the lock, which in CI
-      # (where $CI is set) must already be there.
+      # (where $CI is set) must already be there. `check` checks the man page `man` made.
       - name: Check it
         shell: bash
         working-directory: ${{ runner.temp }}/sample-tool
         run: |
           git init -q
           uv lock
+          uv run --no-project python dev.py man
           uv run --no-project python dev.py check
       # The pre-push hook runs the static checks only: a failing test must not stop a push.
       - name: Check that the pre-push hook runs the static checks, not the tests
@@ -168,6 +169,85 @@ jobs:
           # Each file is only wrong for one check, so its name shows that check ran.
           grep -q 'bad_format.py' "$RUNNER_TEMP/static.log"
           grep -q 'bad_types.py' "$RUNNER_TEMP/static.log"
+      # `man` makes each command's page from the README, which `man --check` and `static` then
+      # check. Linux only: pandoc's output is the same everywhere, which "Check it" shows on
+      # each system, as its `static` checks the page made on that system.
+      - name: Check that man makes the page, and that a stale one fails the checks
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        working-directory: ${{ runner.temp }}/sample-tool
+        run: |
+          set -euo pipefail
+          dev() { uv run --no-project python dev.py "$@"; }
+          fails() {
+            rc=0
+            dev "$@" > "$RUNNER_TEMP/man.log" 2>&1 || rc=$?
+            cat "$RUNNER_TEMP/man.log"
+            test "$rc" != 0
+          }
+          page=man/sample-tool.1
+          cp README.md "$RUNNER_TEMP/README.md"
+          # "Check it" made it: the README's sections, but not Installing or Development.
+          grep -qx '\.TH "SAMPLE\\-TOOL" "1" "" "sample\\-tool" "Sample Tool Manual"' "$page"
+          grep -qx 'sample\\-tool \\- a sample tool' "$page"
+          grep -qx '\.SH USING IT' "$page"
+          if grep -qE '^\.SH (INSTALLING|DEVELOPMENT)' "$page"; then exit 1; fi
+          # A README change makes it stale.
+          printf '\n## More\n\nMore to say.\n' >> README.md
+          fails man --check
+          grep -q "$page" "$RUNNER_TEMP/man.log"
+          fails static
+          grep -q "$page" "$RUNNER_TEMP/man.log"
+          dev man
+          grep -qx '\.SH MORE' "$page"
+          dev man --check
+          # A page no command has is stale too, and man removes it.
+          cp "$page" man/old.1
+          fails man --check
+          grep -q man/old.1 "$RUNNER_TEMP/man.log"
+          dev man
+          test ! -e man/old.1
+          # dev_project.py's sections to leave out, and SYNOPSIS, which comes before DESCRIPTION.
+          printf '%s\n' 'MAN_SKIPPED_SECTIONS = {"Using it"}' \
+            'MAN_SYNOPSIS = {"sample-tool": "**sample-tool** [*args*]"}' > dev_project.py
+          dev man
+          rm dev_project.py
+          test "$(grep -E '^\.SH (NAME|SYNOPSIS|DESCRIPTION)$' "$page" | tr '\n' ' ')" = \
+            '.SH NAME .SH SYNOPSIS .SH DESCRIPTION '
+          grep -qx '\\f\[B\]sample\\-tool\\f\[R\] \[\\f\[I\]args\\f\[R\]\]' "$page"
+          grep -qx '\.SH DEVELOPMENT' "$page"
+          if grep -qx '\.SH USING IT' "$page"; then exit 1; fi
+          # The pre-commit hook makes the page from the staged README, and stages it.
+          git add README.md
+          printf '\n## Unstaged\n\nNot committed.\n' >> README.md
+          sh git_hooks/pre-commit
+          git show ":$page" > "$RUNNER_TEMP/staged.1"
+          diff "$RUNNER_TEMP/staged.1" "$page"
+          grep -qx '\.SH MORE' "$page"
+          if grep -qx '\.SH UNSTAGED' "$page"; then exit 1; fi
+          git read-tree --empty  # unstage them
+          # Back to the sample the later steps expect.
+          cp "$RUNNER_TEMP/README.md" README.md
+          dev man
+          dev man --check
+      # A package with no commands, a library, has no page and nothing to check. Linux only, as
+      # above.
+      - name: Check that man makes no page for a package without commands
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        working-directory: ${{ runner.temp }}/sample-tool
+        run: |
+          set -euo pipefail
+          cp pyproject.toml "$RUNNER_TEMP"
+          mv man "$RUNNER_TEMP/man"
+          sed -i '/^\[project\.scripts\]$/,/^$/d' pyproject.toml
+          if grep -q 'project\.scripts' pyproject.toml; then exit 1; fi
+          uv run --no-project python dev.py man
+          uv run --no-project python dev.py man --check
+          test ! -e man
+          # Back to the sample the later steps expect.
+          cp "$RUNNER_TEMP/pyproject.toml" .
+          mv "$RUNNER_TEMP/man" man
       # `venv` says when it rewrites uv.lock, once. On Linux only, as the sync is the same
       # everywhere. $CI is unset: with it, `uv sync --locked` fails on a stale lock instead.
       - name: Check that venv reports a changed uv.lock
@@ -206,9 +286,10 @@ jobs:
           uv run --no-project python dev.py tests --shard 4/3 > /dev/null 2>&1 || rc=$?
           test "$rc" = 4
       # `install` takes no link over from another clone that still has its target (unless told
-      # to, with --replace), changes nothing if it refuses any (a dev_project.py's links
-      # included), and never installs a temporary clone. In a home of its own, with its bin on
-      # PATH so that on Windows install doesn't add it to the user's PATH.
+      # to, with --replace), changes nothing if it refuses any (the man page's and a
+      # dev_project.py's links included), and never installs a temporary clone. In a home of
+      # its own, with its bin on PATH so that on Windows install doesn't add it to the user's
+      # PATH.
       - name: Check that install leaves another clone's commands alone
         shell: bash
         working-directory: ${{ runner.temp }}/sample-tool
@@ -218,11 +299,12 @@ jobs:
           mkdir -p "$TMPDIR"
           bin=$HOME/.local/bin
           PATH=$(cygpath -u "$bin" 2> /dev/null || echo "$bin"):$PATH
-          # A project's own link, as git-stack links its man page; Windows makes no links.
+          # A project's own link; Windows makes no links but the commands'.
           printf '%s\n' 'from pathlib import Path' '' 'import dev' '' '' \
             'def install_links() -> list[tuple[Path, Path]]:' \
-            '    page = Path.home() / ".local" / "share" / "man" / "man1" / "sample-tool.1"' \
-            '    return [] if dev.WINDOWS else [(page, dev.ROOT / "README.md")]' > dev_project.py
+            '    link = Path.home() / ".local" / "share" / "sample-tool" / "README.md"' \
+            '    return [] if dev.WINDOWS else [(link, dev.ROOT / "README.md")]' > dev_project.py
+          own=$HOME/.local/share/sample-tool/README.md
           man=$HOME/.local/share/man/man1/sample-tool.1
           other=$RUNNER_TEMP/elsewhere
           cp -R . "$other"
@@ -247,15 +329,23 @@ jobs:
           runs | grep -q elsewhere
           if [ "$RUNNER_OS" != Windows ]; then
             readlink "$man" | grep -q elsewhere
-            # The command's link is free, but the man page's isn't: neither changes.
-            rm "$bin/sample-tool"
+            readlink "$own" | grep -q elsewhere
+            # The command's and the project's links are free, but the man page's isn't: none
+            # changes.
+            rm "$bin/sample-tool" "$own"
             refused
             test ! -e "$bin/sample-tool" && test ! -L "$bin/sample-tool"
+            test ! -e "$own" && test ! -L "$own"
             readlink "$man" | grep -q elsewhere
           fi
           install --replace
           mine
-          if [ "$RUNNER_OS" != Windows ]; then readlink "$man" | grep -qE '[/\\]sample-tool[/\\]'; fi
+          if [ "$RUNNER_OS" != Windows ]; then
+            readlink "$man" | grep -qE '[/\\]sample-tool[/\\]man[/\\]sample-tool\.1$'
+            readlink "$own" | grep -qE '[/\\]sample-tool[/\\]README\.md$'
+          else
+            test ! -e "$man"
+          fi
           install  # this clone's own already
           mine
           (cd "$other" && refused)

@@ -10,13 +10,21 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
 - **uv** for the virtualenv and a lockfile (`uv.lock`), with a pip fallback for a machine
   without uv. Builds with hatchling, from a `src/` layout.
 - **`dev.py`**, the same on every system, standard library only: `venv`, `check`, `static`,
-  `tests`, `coverage`, `install` (the package's commands on `PATH`, and the git hooks, never
-  taking a command over from another clone unasked, or installing a temporary one), and what
-  the hooks run.
+  `tests`, `coverage`, `man`, `install` (the package's commands on `PATH`, their man pages
+  where `man` looks, and the git hooks, never taking a command over from another clone
+  unasked, or installing a temporary one), and what the hooks run.
+- **A man page for each command**, `man/<command>.1`, made from the README with pandoc
+  (`pypandoc_binary`, pinned) by `dev.py man`: NAME from the command and the description,
+  then the README's opening and its sections, but not Installing and Development. A
+  project's `dev_project.py` can change which sections it leaves out, and give it a
+  SYNOPSIS. The pre-commit hook makes them again from the staged README, and the static
+  checks fail if one is out of date, in CI too, even when docs alone changed, if the README
+  did. `install` links them into `~/.local/share/man/man1`, but not on Windows, which has no
+  `man`. A library, with no commands, has none.
 - **Ruff** for formatting and linting, and **basedpyright** in strict mode for types.
 - **pytest** with pytest-xdist (one worker per CPU), and coverage.py.
-- **Git hooks**: pre-commit formats and lint-fixes the staged Python files, pre-push runs
-  the static checks before every push.
+- **Git hooks**: pre-commit formats and lint-fixes the staged Python files and makes the man
+  pages again, pre-push runs the static checks before every push.
 - **GitHub Actions**, on pull requests into `main` and on `main`: the static checks once,
   the tests on Linux, macOS and Windows with the oldest and newest Python supported (on a
   system where they're slow, split over several jobs, as the project's answers say), a
@@ -50,9 +58,9 @@ uvx copier copy gh:benekastah/python-template my-tool
 
 Copier asks for the project's name, package name, description, author, GitHub user, the
 oldest and newest Python to support, and how many CI jobs to split the tests into on each
-system (1 to start with), then says what to run next: `git init`, then
-`python3 dev.py install` and `python3 dev.py check`. Commit everything it made, `uv.lock` and
-`.copier-answers.yml` included.
+system (1 to start with), then says what to run next: `git init`, then `python3 dev.py man`,
+`python3 dev.py install` and `python3 dev.py check`. Commit everything it made, `uv.lock`,
+`man/` and `.copier-answers.yml` included.
 
 ## Updating a project
 

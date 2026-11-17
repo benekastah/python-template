@@ -148,7 +148,9 @@ was meant. An agent says it's an agent wherever it writes as a person would: in 
 of a PR's description, a review, and each answer to a finding.
 
 - **The reviewer** reads the diff against the PR's base, its commit messages, this file and
-  `PROJECT_AGENTS.md`, and changes nothing. It looks for, most important first:
+  `PROJECT_AGENTS.md`, and changes nothing. It runs nothing that changes the user's
+  environment: no `dev.py install`, no global installs (`uv tool install`, `pipx install`,
+  `pip install --user`). It looks for, most important first:
   - correctness: obviously correct is much better than just correct;
   - security: use the right secure library rather than writing our own;
   - surprises: anything surprising that's necessary has a comment and a test, only necessary

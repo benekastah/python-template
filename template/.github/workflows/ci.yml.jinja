@@ -190,8 +190,10 @@ jobs:
   # named CI passed could stand in for a real run on the same commit, or pass a stacked pull
   # request (a ruleset judges one in a GitHub stack by the stack's base's rules). GitHub
   # doesn't evaluate a skipped job's name, so the check shows this expression as written,
-  # never CI passed. That run reports every other job as skipped, under its own name: so CI
-  # passed is the only check a ruleset may require.
+  # never CI passed (so its 'CI not run' is never shown: the expression only has to evaluate
+  # to CI passed when the job runs, and differ from it as written). That run reports every
+  # other job as skipped, under its own name: so CI passed is the only check a ruleset may
+  # require.
   passed:
     name: >-
       ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref == 'main'

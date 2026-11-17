@@ -34,6 +34,13 @@ It sets up `.venv` with the package (editable) and the dev tools, puts `{{ proje
 on your `PATH` (a link in `~/.local/bin`, or on Windows a `.cmd` there), and makes the clone
 use the git hooks in `git_hooks/`. On Windows, run `dev.py` with `py` (`py dev.py install`).
 
+If `{{ project_name }}` on your `PATH` is another clone's (or installed another way), it stops
+and says so, changing nothing: `dev.py install --replace` takes it over. A link to a clone
+that's since been deleted it just replaces. It won't install a clone in the temporary
+directory, which would leave the command broken once it's deleted: there, run
+`python3 dev.py venv` and use `.venv/bin/{{ project_name }}` (on Windows,
+`.venv\Scripts\{{ project_name }}.exe`).
+
 `dev.py` runs the same way on Linux, macOS and Windows:
 
 ```sh

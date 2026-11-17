@@ -205,6 +205,69 @@ jobs:
           rc=0
           uv run --no-project python dev.py tests --shard 4/3 > /dev/null 2>&1 || rc=$?
           test "$rc" = 4
+      # `install` takes no link over from another clone that still has its target (unless told
+      # to, with --replace), changes nothing if it refuses any (a dev_project.py's links
+      # included), and never installs a temporary clone. In a home of its own, with its bin on
+      # PATH so that on Windows install doesn't add it to the user's PATH.
+      - name: Check that install leaves another clone's commands alone
+        shell: bash
+        working-directory: ${{ runner.temp }}/sample-tool
+        run: |
+          set -euo pipefail
+          export HOME=$RUNNER_TEMP/home USERPROFILE=$RUNNER_TEMP/home TMPDIR=$RUNNER_TEMP/tmp
+          mkdir -p "$TMPDIR"
+          bin=$HOME/.local/bin
+          PATH=$(cygpath -u "$bin" 2> /dev/null || echo "$bin"):$PATH
+          # A project's own link, as git-stack links its man page; Windows makes no links.
+          printf '%s\n' 'from pathlib import Path' '' 'import dev' '' '' \
+            'def install_links() -> list[tuple[Path, Path]]:' \
+            '    page = Path.home() / ".local" / "share" / "man" / "man1" / "sample-tool.1"' \
+            '    return [] if dev.WINDOWS else [(page, dev.ROOT / "README.md")]' > dev_project.py
+          man=$HOME/.local/share/man/man1/sample-tool.1
+          other=$RUNNER_TEMP/elsewhere
+          cp -R . "$other"
+          rm -rf "$other/.venv"
+          install() { uv run --no-project python dev.py install "$@"; }
+          refused() {
+            rc=0
+            install "$@" > "$RUNNER_TEMP/install.log" 2>&1 || rc=$?
+            cat "$RUNNER_TEMP/install.log"
+            test "$rc" != 0
+          }
+          # What the command's link or shim runs.
+          runs() {
+            if [ "$RUNNER_OS" = Windows ]; then cat "$bin/sample-tool.cmd"; else readlink "$bin/sample-tool"; fi
+          }
+          mine() { runs | grep -qE '[/\\]sample-tool[/\\]\.venv'; }
+          (cd "$other" && install)
+          runs | grep -q elsewhere
+          refused
+          grep -q elsewhere "$RUNNER_TEMP/install.log"
+          grep -q -- --replace "$RUNNER_TEMP/install.log"
+          runs | grep -q elsewhere
+          if [ "$RUNNER_OS" != Windows ]; then
+            readlink "$man" | grep -q elsewhere
+            # The command's link is free, but the man page's isn't: neither changes.
+            rm "$bin/sample-tool"
+            refused
+            test ! -e "$bin/sample-tool" && test ! -L "$bin/sample-tool"
+            readlink "$man" | grep -q elsewhere
+          fi
+          install --replace
+          mine
+          if [ "$RUNNER_OS" != Windows ]; then readlink "$man" | grep -qE '[/\\]sample-tool[/\\]'; fi
+          install  # this clone's own already
+          mine
+          (cd "$other" && refused)
+          (cd "$other" && install --replace)
+          runs | grep -q elsewhere
+          # Once that clone is gone, its links lead nowhere, and install takes them.
+          rm -rf "$other"
+          install
+          mine
+          # A temporary clone is never installed, even with --replace.
+          TMPDIR=$RUNNER_TEMP refused --replace
+          grep -q 'dev.py venv' "$RUNNER_TEMP/install.log"
       # actionlint, with shellcheck for the scripts, catches a workflow GitHub would reject or
       # misread (a bad key or expression, an input that isn't declared), which the checks above
       # never run. Once: the workflows are the same on every system.

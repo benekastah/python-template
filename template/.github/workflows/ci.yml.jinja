@@ -2,8 +2,8 @@
 # with the oldest and newest Python supported, a coverage report once, and the project's own
 # jobs (project.yml): on each pull request into main (on the merge GitHub would make), and on
 # whatever lands on main. A pull request into another branch (one stacked on another's) runs
-# nothing until it targets main: it will be rebased and pushed again by then, which would
-# throw that run away.
+# no job until it targets main (see `on:`): it will be rebased and pushed again by then, which
+# would throw that run away.
 #
 # This file is the template's: `copier update` keeps it current, and merges its changes with
 # any made here. Put the project's own jobs in project.yml instead, which is the project's.

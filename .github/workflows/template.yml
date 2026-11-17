@@ -2,7 +2,7 @@
 # template defaults to, and lints its workflows and this one. On Linux; on macOS and Windows
 # too when a pull request changes code that differs per system (and on main). All of it is
 # skipped for a docs-only pull request. Like the projects' ci.yml, only for a pull request into
-# main: a stacked one runs nothing until it targets main.
+# main: a stacked one runs no job until it targets main.
 name: template
 
 on:

@@ -2,7 +2,7 @@
 
     python dev.py venv               # .venv with the package (editable) and the dev tools
     python dev.py check [ARGS...]    # static, then tests (ARGS go to pytest)
-    python dev.py static             # format, lint and types: the same on every system
+    python dev.py static             # format, lint, types and man pages, the same everywhere
     python dev.py tests [ARGS...]    # the tests, in parallel (ARGS go to pytest)
     python dev.py tests --shard I/N  # the Ith of N even parts of the tests, as CI splits them
     python dev.py coverage [ARGS...] # the tests under coverage.py, and what they don't run

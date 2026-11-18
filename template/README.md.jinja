@@ -47,7 +47,7 @@ which would leave the command broken once it's deleted: there, run `python3 dev.
 
 ```sh
 python3 dev.py check       # every check: static, then tests (even if static failed)
-python3 dev.py static      # Ruff, basedpyright in strict mode, and whether the man pages are current
+python3 dev.py static      # Ruff, basedpyright (strict), and whether the man pages are current
 python3 dev.py tests       # the tests, in parallel (arguments go to pytest, e.g. -k name)
 python3 dev.py coverage    # the tests under coverage.py, and the lines they don't run
 python3 dev.py man         # man/{{ project_name }}.1, the man page, from this README

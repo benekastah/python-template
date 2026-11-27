@@ -59,6 +59,7 @@ tools, and uv picks its own Python.
 import argparse
 import contextlib
 import hashlib
+import http.client
 import importlib
 import io
 import json
@@ -125,8 +126,8 @@ PANDOC_ARCHIVES: dict[tuple[str, str], tuple[str, str]] = {
 }
 """The archive of pandoc's release to download, and its SHA-256, for each (system, CPU)."""
 PANDOC_MAX_BYTES = 100_000_000
-"""The most `_download` takes. A pandoc archive is about 45 MB: it reads one byte more than this, to
-see the download is too big, and refuses it."""
+"""The most `_download` takes of a download. A pandoc archive is about 45 MB: `_download` reads one
+byte more than this, to see a download is too big, and refuses it."""
 MAN_SOURCES = ["README.md", "pyproject.toml", "dev.py", "dev_project.py"]
 """What the man pages are made from: a commit changing one makes them again."""
 MAN_SKIPPED_SECTIONS = {"Install", "Installing", "Development"}
@@ -217,14 +218,16 @@ def install_pandoc(directory: Path) -> None:
     executable = "pandoc.exe" if WINDOWS else "pandoc"
     directory.parent.mkdir(parents=True, exist_ok=True)
     # Made beside the directory, and moved into place, so one that exists has its executable.
-    with tempfile.TemporaryDirectory(dir=directory.parent) as scratch:
+    # ignore_cleanup_errors: a virus scanner holding a file there on Windows mustn't fail an install
+    # that has finished.
+    with tempfile.TemporaryDirectory(dir=directory.parent, ignore_cleanup_errors=True) as scratch:
         staged = Path(scratch) / "pandoc"
         staged.mkdir()
         (staged / executable).write_bytes(_archived(name, data, executable))
         (staged / executable).chmod(0o755)
         if directory.exists() and not (directory / executable).is_file():
-            # What a crash left, which has no executable: moved aside rather than deleted, since two
-            # runs may both find it, and the second mustn't delete what the first installed.
+            # What a crash left, which has no executable: moved aside rather than deleted. (Two runs
+            # may find it at once; if one then installs first, the other keeps that install below.)
             with contextlib.suppress(OSError):
                 directory.replace(Path(scratch) / "broken")
         try:
@@ -246,7 +249,8 @@ def _download(url: str) -> bytes:
         except urllib.error.HTTPError as error:
             if error.code < 500 or attempt == 2:
                 sys.exit(f"man: couldn't download {url}: {error}")
-        except OSError as error:  # URLError (no network, a certificate) and timeouts
+        # No network, a certificate, a dropped connection, a timeout:
+        except (OSError, http.client.HTTPException) as error:
             reason = getattr(error, "reason", None)
             if attempt == 2 or isinstance(reason, ssl.SSLCertVerificationError):
                 sys.exit(f"man: couldn't download {url}: {error}")

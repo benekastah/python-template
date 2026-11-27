@@ -25,8 +25,8 @@ jobs this way when the project's Copier answers say so (see AGENTS.md).
 `man` makes each of the package's commands a man page, `man/<command>.1`, from README.md,
 with pandoc, exactly the version `PANDOC_VERSION` names (the check compares its exact output, so
 another version, e.g. a newer one on PATH, would call the pages stale): dev.py downloads it into
-.venv on first use, checking the archive against the checksum it pins. NAME (the command, and pyproject.toml's description), SYNOPSIS if dev_project.py gives
-one, DESCRIPTION (the README's opening), then the README's `##` sections, but for Install,
+.venv on first use, checking the archive against the checksum it pins. NAME (the command, and
+pyproject.toml's description), SYNOPSIS if dev_project.py gives one, DESCRIPTION (the README's opening), then the README's `##` sections, but for Install,
 Installing and Development. `static` checks the pages are current, and the pre-commit hook
 makes them again from the staged README when a commit changes what they're made from, and
 stages them (or, if the commit names its files, stops it, as it can't). `install` links them
@@ -68,9 +68,11 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import ssl
 import tempfile
 import time
 import tomllib
+import urllib.error
 import urllib.request
 import zipfile
 from collections.abc import Callable
@@ -88,6 +90,7 @@ BIN = VENV / ("Scripts" if WINDOWS else "bin")
 STAMP = VENV / "installed"
 """Touched after installing; older than pyproject.toml or uv.lock means install again."""
 PAGES = ROOT / "man"
+"""Where `man` writes each command's man page."""
 PANDOC_VERSION = "3.14"
 """The pandoc `man` makes the pages with, exactly. To move to another, set this, and each checksum
 below to its archive's: `gh api repos/jgm/pandoc/releases/tags/<version> -q '.assets[] | .name +
@@ -120,7 +123,8 @@ PANDOC_ARCHIVES: dict[tuple[str, str], tuple[str, str]] = {
     ),
 }
 """The archive of pandoc's release to download, and its SHA-256, for each (system, CPU)."""
-"""Where `man` writes each command's man page."""
+PANDOC_MAX_BYTES = 100_000_000
+"""More than a pandoc archive (about 45 MB) is: not read into memory."""
 MAN_SOURCES = ["README.md", "pyproject.toml", "dev.py", "dev_project.py"]
 """What the man pages are made from: a commit changing one makes them again."""
 MAN_SKIPPED_SECTIONS = {"Install", "Installing", "Development"}
@@ -203,7 +207,7 @@ def install_pandoc(directory: Path) -> None:
     standard library unpacks the archive, and only its executable is taken out of it."""
     name, sha256 = pandoc_archive()
     url = f"https://github.com/jgm/pandoc/releases/download/{PANDOC_VERSION}/{name}"
-    print(f"dev: downloading {url}")
+    print(f"dev: downloading {url}", file=sys.stderr)
     data = _download(url)
     actual = hashlib.sha256(data).hexdigest()
     if actual != sha256:
@@ -216,20 +220,35 @@ def install_pandoc(directory: Path) -> None:
         staged.mkdir()
         (staged / executable).write_bytes(_archived(name, data, executable))
         (staged / executable).chmod(0o755)
-        shutil.rmtree(directory, ignore_errors=True)
-        staged.replace(directory)
+        if directory.exists() and not (directory / executable).is_file():
+            shutil.rmtree(directory, ignore_errors=True)  # what a crash left, which has no executable
+        try:
+            staged.replace(directory)
+        except OSError:
+            # Another run installed it first (the pre-push hook and a manual run, say): use theirs.
+            if not (directory / executable).is_file():
+                raise
 
 
 def _download(url: str) -> bytes:
-    """What `url` serves; a transient failure is tried again, and a lasting one ends this script."""
+    """What `url` serves, at most `PANDOC_MAX_BYTES` of it: a failure that may pass (no network, a
+    server error) is tried again, and any other (a 404, a certificate that doesn't verify) or a
+    download too big ends this script."""
     for attempt in range(3):
         try:
             with urllib.request.urlopen(url, timeout=60) as response:  # the URL is https
-                return response.read()
-        except OSError as error:  # URLError and HTTPError are
-            if attempt == 2:
+                data = response.read(PANDOC_MAX_BYTES + 1)
+        except urllib.error.HTTPError as error:
+            if error.code < 500 or attempt == 2:
                 sys.exit(f"man: couldn't download {url}: {error}")
-            time.sleep(2**attempt)
+        except OSError as error:  # URLError (no network, a certificate) and timeouts
+            if attempt == 2 or isinstance(getattr(error, "reason", None), ssl.SSLError):
+                sys.exit(f"man: couldn't download {url}: {error}")
+        else:
+            if len(data) > PANDOC_MAX_BYTES:
+                sys.exit(f"man: {url} is bigger than the {PANDOC_MAX_BYTES} bytes dev.py allows")
+            return data
+        time.sleep(2**attempt)
     raise AssertionError("unreachable")
 
 

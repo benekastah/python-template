@@ -14,8 +14,8 @@ runs on Linux, macOS and Windows: an empty project with its tooling set up, draw
   where `man` looks, and the git hooks, never taking a command over from another clone
   unasked, or installing a temporary one), and what the hooks run.
 - **A man page for each command**, `man/<command>.1`, made from the README with pandoc
-  (a pinned version, which dev.py downloads and checks) by `dev.py man`: NAME from the command and the description,
-  then the README's opening and its sections, but not Installing and Development. A
+  (a pinned version, which dev.py downloads and checks) by `dev.py man`: NAME from the command and
+  the description, then the README's opening and its sections, but not Installing and Development. A
   project's `dev_project.py` can change which sections it leaves out, and give it a
   SYNOPSIS. The pre-commit hook makes them again from the staged README, and the static
   checks fail if one is out of date, in CI too, even when docs alone changed, if the README

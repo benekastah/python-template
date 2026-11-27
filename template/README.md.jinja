@@ -59,7 +59,8 @@ does both for the files you commit (and makes the man page again, below), and th
 hook runs the static checks before every push. CI runs the tests.
 
 The man page, `man/{{ project_name }}.1`, is made from this README by `dev.py man`, with
-pandoc (from the `pypandoc_binary` dev dependency): its sections, but not Installing and
+pandoc (the version `dev.py` pins, which it downloads into `.venv`, and so one on your
+PATH can't change the page): its sections, but not Installing and
 Development. `dev_project.py` can change which sections it leaves out, and give it a SYNOPSIS
 (see `dev.py`'s docstring). The pre-commit hook makes it again when a commit changes the
 README, and adds it to the commit (or stops a commit that names its files, `git commit PATH`,

@@ -26,12 +26,12 @@ jobs this way when the project's Copier answers say so (see AGENTS.md).
 with pandoc, exactly the version `PANDOC_VERSION` names (the check compares its exact output, so
 another version, e.g. a newer one on PATH, would call the pages stale): dev.py downloads it into
 .venv on first use, checking the archive against the checksum it pins. NAME (the command, and
-pyproject.toml's description), SYNOPSIS if dev_project.py gives one, DESCRIPTION (the README's opening), then the README's `##` sections, but for Install,
-Installing and Development. `static` checks the pages are current, and the pre-commit hook
-makes them again from the staged README when a commit changes what they're made from, and
-stages them (or, if the commit names its files, stops it, as it can't). `install` links them
-into ~/.local/share/man/man1 (not on Windows, which has no `man`). A package with no commands,
-a library, gets none.
+pyproject.toml's description), SYNOPSIS if dev_project.py gives one, DESCRIPTION (the README's
+opening), then the README's `##` sections, but for Install, Installing and Development.
+`static` checks the pages are current, and the pre-commit hook makes them again from the staged
+README when a commit changes what they're made from, and stages them (or, if the commit names its
+files, stops it, as it can't). `install` links them into ~/.local/share/man/man1 (not on Windows,
+which has no `man`). A package with no commands, a library, gets none.
 
 It comes from python-template, and `copier update` replaces it: a project adds to it in
 dev_project.py, its own file, if it has one. That can define `COMMANDS`, a dict of extra
@@ -57,6 +57,7 @@ tools, and uv picks its own Python.
 """
 
 import argparse
+import contextlib
 import hashlib
 import importlib
 import io
@@ -65,10 +66,10 @@ import os
 import platform
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 import tarfile
-import ssl
 import tempfile
 import time
 import tomllib
@@ -124,7 +125,8 @@ PANDOC_ARCHIVES: dict[tuple[str, str], tuple[str, str]] = {
 }
 """The archive of pandoc's release to download, and its SHA-256, for each (system, CPU)."""
 PANDOC_MAX_BYTES = 100_000_000
-"""More than a pandoc archive (about 45 MB) is: not read into memory."""
+"""The most `_download` takes. A pandoc archive is about 45 MB: it reads one byte more than this, to
+see the download is too big, and refuses it."""
 MAN_SOURCES = ["README.md", "pyproject.toml", "dev.py", "dev_project.py"]
 """What the man pages are made from: a commit changing one makes them again."""
 MAN_SKIPPED_SECTIONS = {"Install", "Installing", "Development"}
@@ -221,7 +223,10 @@ def install_pandoc(directory: Path) -> None:
         (staged / executable).write_bytes(_archived(name, data, executable))
         (staged / executable).chmod(0o755)
         if directory.exists() and not (directory / executable).is_file():
-            shutil.rmtree(directory, ignore_errors=True)  # what a crash left, which has no executable
+            # What a crash left, which has no executable: moved aside rather than deleted, since two
+            # runs may both find it, and the second mustn't delete what the first installed.
+            with contextlib.suppress(OSError):
+                directory.replace(Path(scratch) / "broken")
         try:
             staged.replace(directory)
         except OSError:
@@ -242,7 +247,8 @@ def _download(url: str) -> bytes:
             if error.code < 500 or attempt == 2:
                 sys.exit(f"man: couldn't download {url}: {error}")
         except OSError as error:  # URLError (no network, a certificate) and timeouts
-            if attempt == 2 or isinstance(getattr(error, "reason", None), ssl.SSLError):
+            reason = getattr(error, "reason", None)
+            if attempt == 2 or isinstance(reason, ssl.SSLCertVerificationError):
                 sys.exit(f"man: couldn't download {url}: {error}")
         else:
             if len(data) > PANDOC_MAX_BYTES:
@@ -253,7 +259,8 @@ def _download(url: str) -> bytes:
 
 
 def _archived(name: str, data: bytes, executable: str) -> bytes:
-    """The file called `executable` in the zip or tar archive `data` (`name` says which), at any depth."""
+    """The file called `executable` in the zip or tar archive `data` (`name` says which), at any
+    depth."""
     if name.endswith(".zip"):
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             for info in archive.infolist():
